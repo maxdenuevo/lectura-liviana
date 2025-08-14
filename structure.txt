@@ -1,0 +1,31 @@
+.
+├── public
+│   ├── fonts
+│   │   └── OpenDyslexic-Regular.otf
+│   ├── file.svg
+│   ├── globe.svg
+│   ├── next.svg
+│   ├── vercel.svg
+│   └── window.svg
+├── src
+│   ├── app
+│   │   ├── api
+│   │   ├── favicon.ico
+│   │   ├── globals.css
+│   │   ├── layout.tsx
+│   │   └── page.tsx
+│   ├── components
+│   │   └── RSVPReader.tsx
+│   └── lib
+│       └── utils.ts
+├── next-env.d.ts
+├── next.config.ts
+├── package-lock.json
+├── package.json
+├── postcss.config.mjs
+├── README.md
+├── structure.txt
+├── tailwind.config.ts
+└── tsconfig.json
+
+8 directories, 21 files
