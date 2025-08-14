@@ -3,12 +3,13 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({ 
-  subsets: ["latin"]
+  subsets: ["latin"],
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
-  title: "Lectura Liviana - RSVP Reader",
-  description: "Herramienta de lectura rápida con método RSVP",
+  title: "Lectura Liviana ⚡ - RSVP Reader",
+  description: "Herramienta de lectura rápida con método RSVP - Cálida y cómoda para la vista",
 };
 
 export default function RootLayout({
@@ -17,8 +18,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es">
-      <body className={inter.className}>{children}</body>
+    <html lang="es" className="bg-stone-900">
+      <head>
+        <style dangerouslySetInnerHTML={{
+          __html: `
+            html { background-color: #1c1917 !important; }
+            body { background-color: #1c1917 !important; color: #e7e5e4 !important; }
+          `
+        }} />
+      </head>
+      <body className={`${inter.className} bg-stone-900 text-stone-200 antialiased`}>
+        {children}
+      </body>
     </html>
   );
 }
