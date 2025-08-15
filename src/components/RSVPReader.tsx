@@ -3,101 +3,12 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// --- Iconos SVG ---
-const PlayIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-);
-
-const PauseIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
-);
-
-const RestartIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 11A8.1 8.1 0 0 0 4.5 9M4 5v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg>
-);
-
-const SettingsIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-);
-
-const StatsIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line></svg>
-);
-
-const ThemeIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-);
-
 // --- Tipos ---
-type Theme = 'night' | 'day' | 'sepia' | 'contrast';
-type SpeedPreset = 'beginner' | 'comfort' | 'fast' | 'expert';
-
 interface SessionStats {
   wordsRead: number;
   totalTime: number;
   averageWpm: number;
-  pauseCount: number;
-  comprehensionScore?: number;
 }
-
-interface TextMetrics {
-  difficulty: 'easy' | 'medium' | 'hard';
-  avgWordLength: number;
-  sentenceCount: number;
-  suggestedWpm: number;
-}
-
-// --- Configuración de temas ---
-const themes: Record<Theme, any> = {
-  night: {
-    bg: 'bg-stone-900',
-    cardBg: 'bg-stone-800',
-    border: 'border-stone-700',
-    text: 'text-stone-200',
-    textMuted: 'text-stone-500',
-    accent: 'text-orange-400',
-    button: 'bg-orange-600 hover:bg-orange-700',
-    secondary: 'bg-stone-700 hover:bg-stone-600'
-  },
-  day: {
-    bg: 'bg-gray-50',
-    cardBg: 'bg-white',
-    border: 'border-gray-200',
-    text: 'text-gray-900',
-    textMuted: 'text-gray-500',
-    accent: 'text-blue-600',
-    button: 'bg-blue-600 hover:bg-blue-700',
-    secondary: 'bg-gray-200 hover:bg-gray-300'
-  },
-  sepia: {
-    bg: 'bg-amber-50',
-    cardBg: 'bg-yellow-50',
-    border: 'border-amber-200',
-    text: 'text-amber-900',
-    textMuted: 'text-amber-600',
-    accent: 'text-amber-700',
-    button: 'bg-amber-600 hover:bg-amber-700',
-    secondary: 'bg-amber-200 hover:bg-amber-300'
-  },
-  contrast: {
-    bg: 'bg-black',
-    cardBg: 'bg-gray-900',
-    border: 'border-white',
-    text: 'text-white',
-    textMuted: 'text-gray-400',
-    accent: 'text-yellow-400',
-    button: 'bg-yellow-400 hover:bg-yellow-500 text-black',
-    secondary: 'bg-gray-800 hover:bg-gray-700'
-  }
-};
-
-// --- Presets de velocidad ---
-const speedPresets: Record<SpeedPreset, { wpm: number; label: string; description: string }> = {
-  beginner: { wpm: 200, label: 'Principiante', description: 'Ideal para empezar' },
-  comfort: { wpm: 300, label: 'Cómodo', description: 'Ritmo relajado' },
-  fast: { wpm: 500, label: 'Rápido', description: 'Lectura ágil' },
-  expert: { wpm: 800, label: 'Experto', description: 'Velocidad máxima' }
-};
 
 export default function RSVPReader() {
   // --- Estados principales ---
@@ -105,272 +16,102 @@ export default function RSVPReader() {
   const [wpm, setWpm] = useState(300);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [theme, setTheme] = useState<Theme>('night');
   const [useDyslexicFont, setUseDyslexicFont] = useState(false);
   
   // --- Estados de UI ---
-  const [showSettings, setShowSettings] = useState(false);
-  const [showStats, setShowStats] = useState(false);
-  const [shortcutFeedback, setShortcutFeedback] = useState('');
-  const [zenMode, setZenMode] = useState(false);
+  const [showControls, setShowControls] = useState(true);
+  const [showConfig, setShowConfig] = useState(false);
+  const [notification, setNotification] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   
-  // --- Estados de características ---
-  const [adaptiveMode, setAdaptiveMode] = useState(false);
-  const [showBreathingPauses, setShowBreathingPauses] = useState(true);
-  const [useSmartChunking, setUseSmartChunking] = useState(true);
-  const [savedPosition, setSavedPosition] = useState(0);
+  // --- Estados de sesión ---
   const [sessionStats, setSessionStats] = useState<SessionStats | null>(null);
-  const [textMetrics, setTextMetrics] = useState<TextMetrics | null>(null);
-  
-  // --- Estados de carga ---
-  const [url, setUrl] = useState('');
-  const [isLoadingUrl, setIsLoadingUrl] = useState(false);
-  const [articleTitle, setArticleTitle] = useState('');
-  
-  // --- Refs para tracking ---
   const sessionStartTime = useRef<number>(0);
   const wordsReadInSession = useRef<number>(0);
-  const pauseCount = useRef<number>(0);
-  const breathingCounter = useRef<number>(0);
+  
+  // --- Refs ---
+  const containerRef = useRef<HTMLDivElement>(null);
+  const controlsTimeout = useRef<NodeJS.Timeout | null>(null);
+  const touchStartX = useRef<number>(0);
+  const touchStartY = useRef<number>(0);
+
+  // --- Texto por defecto ---
+  const DEFAULT_TEXT = "Bienvenido a tu espacio de lectura rápida. Un lugar cálido y minimalista donde las palabras fluyen con naturalidad. Presiona espacio o toca la pantalla para comenzar.";
 
   // --- Cargar configuración inicial ---
   useEffect(() => {
-    const defaultText = "Pega tu texto o carga un archivo. La presentación visual en serie rápida (RSVP) muestra las palabras de forma secuencial para eliminar el movimiento ocular y aumentar tu velocidad de lectura. Esta herramienta está optimizada para sesiones largas de lectura con características avanzadas como pausas de respiración, modo adaptativo y análisis de dificultad del texto.";
-    
-    setText(localStorage.getItem('text') || defaultText);
-    setWpm(Number(localStorage.getItem('wpm')) || 300);
-
-    // --- CORRECCIÓN ---
-    // Se valida que el tema guardado en localStorage sea una clave válida en el objeto `themes`.
-    // Si no es válido, se establece un tema por defecto ('night') para evitar errores.
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme && savedTheme in themes) {
-      setTheme(savedTheme as Theme);
-    } else {
-      setTheme('night');
-    }
-    // --- FIN DE LA CORRECCIÓN ---
-
+    const savedText = localStorage.getItem('savedText');
+    setText(savedText || DEFAULT_TEXT);
+    setWpm(Number(localStorage.getItem('savedWpm')) || 300);
     setUseDyslexicFont(localStorage.getItem('dyslexic') === 'true');
-    setAdaptiveMode(localStorage.getItem('adaptive') === 'true');
-    setShowBreathingPauses(localStorage.getItem('breathing') !== 'false');
-    
-    // Recuperar posición guardada
-    const saved = Number(localStorage.getItem('lastPosition')) || 0;
-    const savedText = localStorage.getItem('lastText') || '';
-    if (savedText === (localStorage.getItem('text') || defaultText) && saved > 0) {
-      setSavedPosition(saved);
-    }
-  }, []);
-
-  // --- Función de chunking inteligente ---
-  const smartChunk = useCallback((text: string): string[] => {
-    if (!useSmartChunking) {
-      return text.trim().split(/\s+/).filter(Boolean);
-    }
-
-    const sentences = text.split(/(?<=[.!?])\s+/);
-    const chunks: string[] = [];
-    
-    sentences.forEach(sentence => {
-      // Dividir por unidades de significado
-      const phrases = sentence.split(/,\s*/);
-      phrases.forEach(phrase => {
-        // Agrupar artículos, preposiciones y adjetivos con sus sustantivos
-        const words = phrase.split(/\s+/);
-        let i = 0;
-        while (i < words.length) {
-          let chunk = words[i];
-          
-          // Palabras cortas se agrupan con la siguiente
-          if (i < words.length - 1 && words[i].length <= 3) {
-            chunk += ' ' + words[i + 1];
-            i += 2;
-            
-            // Si la siguiente también es corta, agrégala
-            if (i < words.length && words[i].length <= 4) {
-              chunk += ' ' + words[i];
-              i++;
-            }
-          } else {
-            i++;
-          }
-          
-          if (chunk) chunks.push(chunk);
-        }
-      });
-    });
-    
-    return chunks;
-  }, [useSmartChunking]);
-
-  // --- Analizar métricas del texto ---
-  const analyzeText = useCallback((text: string): TextMetrics => {
-    const words = text.split(/\s+/);
-    const sentences = text.split(/[.!?]+/).filter(Boolean);
-    const avgWordLength = words.reduce((acc, word) => acc + word.length, 0) / words.length;
-    
-    // Calcular dificultad basada en longitud de palabras y oraciones
-    let difficulty: 'easy' | 'medium' | 'hard' = 'medium';
-    let suggestedWpm = 300;
-    
-    if (avgWordLength < 4 && sentences.length > 0) {
-      difficulty = 'easy';
-      suggestedWpm = 400;
-    } else if (avgWordLength > 6) {
-      difficulty = 'hard';
-      suggestedWpm = 250;
-    }
-    
-    // Índice Flesch-Kincaid simplificado
-    const avgWordsPerSentence = words.length / Math.max(sentences.length, 1);
-    if (avgWordsPerSentence > 20) {
-      difficulty = 'hard';
-      suggestedWpm = Math.min(suggestedWpm, 250);
-    }
-    
-    return {
-      difficulty,
-      avgWordLength,
-      sentenceCount: sentences.length,
-      suggestedWpm
-    };
   }, []);
 
   // --- Procesar palabras ---
-  const { words, paragraphIndices } = useMemo(() => {
-    const chunks = smartChunk(text);
-    const paragraphs: number[] = [];
-    
-    // Detectar saltos de párrafo
-    let currentPos = 0;
-    text.split('\n\n').forEach((para, idx) => {
-      if (para.trim()) {
-        paragraphs.push(currentPos);
-        currentPos += para.split(/\s+/).filter(Boolean).length;
-      }
-    });
-    
-    return { words: chunks, paragraphIndices: paragraphs };
-  }, [text, smartChunk]);
+  const words = useMemo(() => {
+    return text.trim().split(/\s+/).filter(Boolean);
+  }, [text]);
 
-  // --- Actualizar métricas cuando cambie el texto ---
-  useEffect(() => {
-    if (text) {
-      const metrics = analyzeText(text);
-      setTextMetrics(metrics);
-      
-      // Sugerir velocidad si es la primera vez
-      if (!localStorage.getItem('wpm')) {
-        setWpm(metrics.suggestedWpm);
-      }
-    }
-  }, [text, analyzeText]);
-
-  // --- Calcular tiempo restante ---
-  const calculateTimeRemaining = useCallback(() => {
-    if (currentIndex >= words.length) return 0;
+  // --- Auto-ocultar controles mejorado ---
+  const showControlsTemporarily = useCallback(() => {
+    setShowControls(true);
+    if (controlsTimeout.current) clearTimeout(controlsTimeout.current);
     
-    let totalMs = 0;
-    const baseDelay = 60000 / wpm;
-    
-    for (let i = currentIndex; i < words.length; i++) {
-      let delay = baseDelay;
-      const word = words[i];
-      
-      // Pausas inteligentes
-      if (word.endsWith(',')) delay *= 1.3;
-      else if (word.endsWith(':') || word.endsWith(';')) delay *= 1.5;
-      else if (/[.!?]$/.test(word)) delay *= 2;
-      
-      // Pausas de respiración cada 50 palabras
-      if (showBreathingPauses && (i - currentIndex) % 50 === 0 && i > currentIndex) {
-        delay += 1500; // 1.5 segundos de pausa
-      }
-      
-      totalMs += delay;
-    }
-    
-    return Math.ceil(totalMs / 1000);
-  }, [currentIndex, words, wpm, showBreathingPauses]);
-
-  // --- Guardar preferencias ---
-  useEffect(() => {
-    localStorage.setItem('wpm', wpm.toString());
-    localStorage.setItem('theme', theme);
-    localStorage.setItem('dyslexic', useDyslexicFont.toString());
-    localStorage.setItem('adaptive', adaptiveMode.toString());
-    localStorage.setItem('breathing', showBreathingPauses.toString());
-    localStorage.setItem('text', text);
-    localStorage.setItem('lastText', text);
-  }, [wpm, theme, useDyslexicFont, adaptiveMode, showBreathingPauses, text]);
-
-  // --- Guardar posición al pausar ---
-  useEffect(() => {
-    if (!isPlaying && currentIndex > 0) {
-      localStorage.setItem('lastPosition', currentIndex.toString());
-      pauseCount.current++;
-    }
-  }, [isPlaying, currentIndex]);
-
-  // --- Iniciar sesión ---
-  useEffect(() => {
-    if (isPlaying && sessionStartTime.current === 0) {
-      sessionStartTime.current = Date.now();
-      wordsReadInSession.current = 0;
-      pauseCount.current = 0;
+    if (isPlaying) {
+      controlsTimeout.current = setTimeout(() => {
+        setShowControls(false);
+      }, 3000);
     }
   }, [isPlaying]);
 
-  // --- Timer principal con pausas de respiración ---
+  useEffect(() => {
+    const handleMouseMove = () => showControlsTemporarily();
+    const handleTouch = () => showControlsTemporarily();
+    
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('touchstart', handleTouch);
+    
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('touchstart', handleTouch);
+      if (controlsTimeout.current) clearTimeout(controlsTimeout.current);
+    };
+  }, [showControlsTemporarily]);
+
+  // --- Timer principal optimizado ---
   useEffect(() => {
     if (!isPlaying || currentIndex >= words.length) {
-      // Fin de la sesión
       if (currentIndex >= words.length && sessionStartTime.current > 0) {
+        // Calcular estadísticas de sesión
         const totalTime = (Date.now() - sessionStartTime.current) / 1000;
         const avgWpm = Math.round((wordsReadInSession.current / totalTime) * 60);
         
         setSessionStats({
           wordsRead: wordsReadInSession.current,
           totalTime: Math.round(totalTime),
-          averageWpm: avgWpm,
-          pauseCount: pauseCount.current,
-          comprehensionScore: undefined // Podría implementarse con quiz
+          averageWpm: avgWpm
         });
         
-        setShowStats(true);
         sessionStartTime.current = 0;
+        showNotification('Lectura completada');
+        setIsPlaying(false);
+        setCurrentIndex(0);
       }
       return;
     }
 
-    const currentChunk = words[currentIndex];
+    // Iniciar sesión si es necesario
+    if (sessionStartTime.current === 0) {
+      sessionStartTime.current = Date.now();
+      wordsReadInSession.current = 0;
+    }
+
+    const currentWord = words[currentIndex];
     let delay = 60000 / wpm;
     
-    // Modo adaptativo: ajustar velocidad según complejidad
-    if (adaptiveMode && currentChunk) {
-      const wordLength = currentChunk.split(' ')[0].length;
-      if (wordLength > 8) delay *= 1.2;
-      else if (wordLength < 4) delay *= 0.9;
-    }
-    
-    // Pausas según puntuación
-    if (currentChunk.endsWith(',')) delay *= 1.3;
-    else if (currentChunk.endsWith(':') || currentChunk.endsWith(';')) delay *= 1.5;
-    else if (/[.!?]$/.test(currentChunk)) delay *= 2;
-    
-    // Pausa de respiración cada 50 palabras
-    breathingCounter.current++;
-    let isBreathingPause = false;
-    if (showBreathingPauses && breathingCounter.current >= 50) {
-      isBreathingPause = true;
-      breathingCounter.current = 0;
-      delay += 1500;
-      
-      setTimeout(() => {
-        showFeedback('Respira...');
-      }, delay - 1500);
-    }
+    // Pausas inteligentes según puntuación
+    if (currentWord?.endsWith(',')) delay *= 1.3;
+    else if (currentWord?.endsWith(':') || currentWord?.endsWith(';')) delay *= 1.5;
+    else if (/[.!?]$/.test(currentWord || '')) delay *= 2;
 
     const timer = setTimeout(() => {
       setCurrentIndex(i => i + 1);
@@ -378,614 +119,491 @@ export default function RSVPReader() {
     }, delay);
 
     return () => clearTimeout(timer);
-  }, [isPlaying, currentIndex, words, wpm, adaptiveMode, showBreathingPauses]);
+  }, [isPlaying, currentIndex, words, wpm]);
+
+  // --- Guardar preferencias (solo si no es texto default) ---
+  useEffect(() => {
+    localStorage.setItem('savedWpm', wpm.toString());
+    localStorage.setItem('dyslexic', useDyslexicFont.toString());
+    if (text && text !== DEFAULT_TEXT) {
+      localStorage.setItem('savedText', text);
+    }
+  }, [wpm, text, useDyslexicFont]);
+
+  // --- Calcular punto focal optimizado (ORP) ---
+  const getWordParts = (word: string) => {
+    if (!word) return { pre: '', focal: '', post: '' };
+
+    const len = word.length;
+    let pivot = 0;
+
+    if (len <= 2) pivot = 0;
+    else if (len <= 5) pivot = 1;
+    else if (len <= 9) pivot = 2;
+    else pivot = Math.floor(len * 0.3);
+
+    return {
+      pre: word.slice(0, pivot),
+      focal: word.slice(pivot, pivot + 1),
+      post: word.slice(pivot + 1)
+    };
+  };
+
+  // --- Mostrar notificación ---
+  const showNotification = (message: string) => {
+    setNotification(message);
+    setTimeout(() => setNotification(''), 2000);
+  };
 
   // --- Handlers ---
-  const handleRestart = useCallback(() => {
-    setIsPlaying(false);
-    setCurrentIndex(0);
-    setSavedPosition(0);
-    breathingCounter.current = 0;
-    localStorage.removeItem('lastPosition');
-  }, []);
-
-  const handlePlayPause = useCallback(() => {
+  const togglePlay = useCallback(() => {
     if (!words.length) return;
     if (currentIndex >= words.length) {
       setCurrentIndex(0);
-      breathingCounter.current = 0;
     }
-    setIsPlaying(p => !p);
-  }, [words.length, currentIndex]);
+    setIsPlaying(!isPlaying);
+    showControlsTemporarily();
+  }, [isPlaying, currentIndex, words.length, showControlsTemporarily]);
 
-  const handleWpmChange = (val: number) => {
-    setWpm(Math.max(50, Math.min(1200, val)));
+  const restart = useCallback(() => {
+    setIsPlaying(false);
+    setCurrentIndex(0);
+    sessionStartTime.current = 0;
+    wordsReadInSession.current = 0;
+    showNotification('Reiniciado');
+    showControlsTemporarily();
+  }, [showControlsTemporarily]);
+
+  const adjustSpeed = useCallback((delta: number) => {
+    const newWpm = Math.max(100, Math.min(1000, wpm + delta));
+    setWpm(newWpm);
+    showNotification(`${newWpm} ppm`);
+    showControlsTemporarily();
+  }, [wpm, showControlsTemporarily]);
+
+  // --- Touch handlers para móvil ---
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
   };
 
-  const handleContinueFromSaved = () => {
-    setCurrentIndex(savedPosition);
-    setSavedPosition(0);
-    setIsPlaying(true);
-  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
 
-  const jumpToParagraph = (direction: 'next' | 'prev') => {
-    if (direction === 'next') {
-      const next = paragraphIndices.find(p => p > currentIndex);
-      if (next !== undefined) {
-        setCurrentIndex(next);
-        showFeedback('Siguiente párrafo');
-      }
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+      // Swipe horizontal - ajustar velocidad
+      adjustSpeed(deltaX > 0 ? 25 : -25);
+    } else if (Math.abs(deltaY) > 50) {
+      // Swipe vertical - mostrar/ocultar config
+      setShowConfig(deltaY > 0);
     } else {
-      const current = paragraphIndices.findIndex(p => p > currentIndex);
-      const prev = paragraphIndices[Math.max(0, current - 2)];
-      if (prev !== undefined) {
-        setCurrentIndex(prev);
-        showFeedback('Párrafo anterior');
-      }
+      // Tap - play/pause
+      togglePlay();
     }
   };
 
-  const showFeedback = (message: string) => {
-    setShortcutFeedback(message);
-    setTimeout(() => setShortcutFeedback(''), 2000);
-  };
+  // --- Keyboard shortcuts ---
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) return;
 
-  const handleFileLoad = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const content = ev.target?.result as string || '';
-      setText(content);
-      setArticleTitle(file.name.replace(/\.[^/.]+$/, ""));
-      handleRestart();
-      setShowSettings(false);
-      
-      // Analizar y mostrar métricas
-      const metrics = analyzeText(content);
-      setTextMetrics(metrics);
-      showFeedback(`Cargado: ${file.name} (Dificultad: ${metrics.difficulty})`);
+      switch(e.key) {
+        case ' ':
+          e.preventDefault();
+          togglePlay();
+          break;
+        case 'r':
+        case 'R':
+          restart();
+          break;
+        case 'ArrowRight':
+          adjustSpeed(25);
+          break;
+        case 'ArrowLeft':
+          adjustSpeed(-25);
+          break;
+        case 'Escape':
+          setShowConfig(false);
+          break;
+        case 'c':
+        case 'C':
+          setShowConfig(!showConfig);
+          break;
+      }
     };
-    reader.readAsText(file);
-  };
 
-  const handleFetchUrl = async () => {
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [togglePlay, restart, adjustSpeed, showConfig]);
+
+  // --- Cargar desde URL ---
+  const loadFromUrl = async (url: string) => {
     if (!url.startsWith('http')) {
-      showFeedback('URL inválida');
+      showNotification('URL inválida');
       return;
     }
-    
-    setIsLoadingUrl(true);
-    
+
+    setIsLoading(true);
     try {
       const response = await fetch('/api/fetch-url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url })
       });
-      
+
       const data = await response.json();
-      
-      if (data.error) {
-        showFeedback("Error: " + data.error);
+      if (data.content) {
+        setText(data.content);
+        restart();
+        setShowConfig(false);
+        showNotification('Artículo cargado');
       } else {
-        setText(data.content || "Sin contenido");
-        setArticleTitle(data.title || "Artículo");
-        handleRestart();
-        setShowSettings(false);
-        
-        // Analizar texto
-        const metrics = analyzeText(data.content);
-        setTextMetrics(metrics);
-        showFeedback(`${data.title} (${metrics.difficulty})`);
+        showNotification('Error al cargar');
       }
     } catch {
-      showFeedback("Error al cargar");
+      showNotification('Error de conexión');
     } finally {
-      setIsLoadingUrl(false);
-      setUrl('');
+      setIsLoading(false);
     }
   };
 
-  // --- Atajos de teclado ---
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
-      
-      const handlers: Record<string, () => void> = {
-        'Space': () => {
-          e.preventDefault();
-          handlePlayPause();
-          showFeedback(isPlaying ? 'Pausado' : 'Reproduciendo');
-        },
-        'KeyR': () => {
-          handleRestart();
-          showFeedback('Reiniciado');
-        },
-        'KeyZ': () => {
-          setZenMode(!zenMode);
-          showFeedback(zenMode ? 'Modo normal' : 'Modo Zen');
-        },
-        'KeyT': () => {
-          const themeOrder: Theme[] = ['night', 'day', 'sepia', 'contrast'];
-          const currentIdx = themeOrder.indexOf(theme);
-          const nextTheme = themeOrder[(currentIdx + 1) % themeOrder.length];
-          setTheme(nextTheme);
-          showFeedback(`Tema: ${nextTheme}`);
-        },
-        'KeyS': () => {
-          setShowStats(!showStats);
-        },
-        'Escape': () => {
-          if (zenMode) setZenMode(false);
-          else if (showStats) setShowStats(false);
-          else setShowSettings(false);
-        }
-      };
-      
-      if (handlers[e.code]) {
-        handlers[e.code]();
-      } else if (e.code === 'ArrowRight') {
-        if (e.shiftKey) {
-          jumpToParagraph('next');
-        } else {
-          const newWpm = wpm + (e.ctrlKey ? 50 : 10);
-          handleWpmChange(newWpm);
-          showFeedback(`${newWpm} PPM`);
-        }
-      } else if (e.code === 'ArrowLeft') {
-        if (e.shiftKey) {
-          jumpToParagraph('prev');
-        } else {
-          const newWpm = wpm - (e.ctrlKey ? 50 : 10);
-          handleWpmChange(newWpm);
-          showFeedback(`${newWpm} PPM`);
-        }
-      } else if (e.code === 'ArrowUp') {
-        setCurrentIndex(i => Math.max(0, i - 1));
-      } else if (e.code === 'ArrowDown') {
-        setCurrentIndex(i => Math.min(words.length - 1, i + 1));
+  // --- Cargar archivo ---
+  const handleFileLoad = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      if (content) {
+        setText(content);
+        restart();
+        setShowConfig(false);
+        showNotification(`${file.name} cargado`);
       }
     };
-    
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [handlePlayPause, handleRestart, wpm, words.length, isPlaying, zenMode, theme, showStats, paragraphIndices, currentIndex]);
-
-  // --- Calcular punto focal óptimo (ORP) ---
-  const getFocusedWord = (chunk: string) => {
-    if (!chunk) return { pre: '', focal: '', post: '' };
-    const word = chunk.split(' ')[0];
-    
-    // ORP en ~35% de la palabra
-    const len = word.length;
-    let pivotIndex = Math.floor(len * 0.35);
-    if (len <= 2) pivotIndex = 0;
-    else if (len <= 4) pivotIndex = 1;
-    
-    return {
-      pre: word.slice(0, pivotIndex),
-      focal: word.slice(pivotIndex, pivotIndex + 1),
-      post: word.slice(pivotIndex + 1),
-      rest: chunk.split(' ').slice(1).join(' ')
-    };
+    reader.readAsText(file);
   };
 
-  const currentParts = getFocusedWord(words[currentIndex] || '');
-  const currentTheme = themes[theme];
-  const fontClass = useDyslexicFont ? 'font-opendyslexic' : 'font-sans';
+  // --- Cálculos ---
+  const currentWord = words[currentIndex] || '';
+  const wordParts = getWordParts(currentWord);
+  const progress = words.length > 0 ? (currentIndex / words.length) * 100 : 0;
+  const fontClass = useDyslexicFont ? 'font-dyslexic' : '';
   
-  const progressPercentage = words.length > 0 ? (currentIndex / words.length) * 100 : 0;
-  const timeRemaining = calculateTimeRemaining();
+  const timeRemaining = useMemo(() => {
+    if (!words.length || currentIndex >= words.length) return 0;
+    const wordsLeft = words.length - currentIndex;
+    return Math.ceil((wordsLeft / wpm) * 60);
+  }, [words.length, currentIndex, wpm]);
 
-  // --- Modo Zen ---
-  if (zenMode) {
-    return (
-      <div className={`flex items-center justify-center min-h-screen bg-black ${fontClass}`}>
-        <div className="relative">
-          {/* Guías visuales sutiles */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-px h-20 bg-gradient-to-b from-transparent via-orange-400/10 to-transparent" />
-          </div>
-          
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentIndex}
-              initial={{ opacity: 0, filter: 'blur(4px)' }}
-              animate={{ opacity: 1, filter: 'blur(0px)' }}
-              exit={{ opacity: 0, filter: 'blur(4px)' }}
-              transition={{ duration: 0.15 }}
-              className="text-6xl md:text-8xl font-light tracking-wide text-center px-8"
-            >
-              <span className="text-gray-600">{currentParts.pre}</span>
-              <span className="text-orange-400 font-medium focal-letter">{currentParts.focal}</span>
-              <span className="text-gray-400">{currentParts.post}</span>
-              {currentParts.rest && (
-                <span className="text-gray-500 ml-3">{currentParts.rest}</span>
-              )}
-            </motion.div>
-          </AnimatePresence>
-        </div>
-        
-        {/* Indicador minimalista de progreso */}
-        <div className="fixed bottom-0 left-0 right-0 h-1 bg-gray-900">
-          <div 
-            className="h-full bg-gradient-to-r from-orange-600 to-orange-400 transition-all duration-300"
-            style={{ width: `${progressPercentage}%` }}
-          />
-        </div>
-      </div>
-    );
-  }
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   return (
-    <div className={`min-h-screen ${currentTheme.bg} ${currentTheme.text} ${fontClass}`}>
-      <div className="flex flex-col items-center justify-center min-h-screen p-4">
-        
-        {/* Feedback flotante */}
-        <AnimatePresence>
-          {shortcutFeedback && (
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="fixed top-20 bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-3 rounded-full text-white font-medium z-50 shadow-lg"
-            >
-              {shortcutFeedback}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Header con información contextual */}
-        <div className="w-full max-w-4xl mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              {articleTitle && (
-                <span className={`text-sm ${currentTheme.textMuted}`}>{articleTitle}</span>
-              )}
-              {textMetrics && (
-                <span className={`text-xs px-2 py-1 rounded-full ${
-                  textMetrics.difficulty === 'easy' ? 'bg-green-500/20 text-green-400' :
-                  textMetrics.difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                  'bg-red-500/20 text-red-400'
-                }`}>
-                  {textMetrics.difficulty === 'easy' ? 'Fácil' :
-                   textMetrics.difficulty === 'medium' ? 'Medio' : 'Difícil'}
-                </span>
-              )}
-            </div>
-            
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowStats(!showStats)}
-                className={`p-2 rounded-lg ${currentTheme.secondary} transition-all`}
-                title="Estadísticas (S)"
-              >
-                <StatsIcon />
-              </button>
-              <button
-                onClick={() => {
-                  const themeOrder: Theme[] = ['night', 'day', 'sepia', 'contrast'];
-                  const idx = themeOrder.indexOf(theme);
-                  setTheme(themeOrder[(idx + 1) % 4]);
-                }}
-                className={`p-2 rounded-lg ${currentTheme.secondary} transition-all`}
-                title="Cambiar tema (T)"
-              >
-                <ThemeIcon />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Botón para continuar desde posición guardada */}
-        {savedPosition > 0 && !isPlaying && (
-          <motion.button
-            initial={{ opacity: 0, y: -10 }}
+    <div
+      ref={containerRef}
+      className={`min-h-screen bg-candlelight ${fontClass}`}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Notificación flotante elegante */}
+      <AnimatePresence>
+        {notification && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            onClick={handleContinueFromSaved}
-            className={`mb-4 text-sm ${currentTheme.accent} hover:underline`}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-8 left-1/2 -translate-x-1/2 px-6 py-3 bg-stone-900/90 backdrop-blur-md rounded-full text-amber-400 text-sm font-light z-50"
           >
-            Continuar desde palabra {savedPosition} ({Math.round((savedPosition / words.length) * 100)}%)
-          </motion.button>
+            {notification}
+          </motion.div>
         )}
-        
-        {/* Display principal con guías visuales */}
-        <div className="relative w-full max-w-4xl mb-6">
-          {/* Guías de enfoque */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="focal-guide w-px h-3/4 bg-gradient-to-b from-transparent via-current to-transparent opacity-5" />
-          </div>
+      </AnimatePresence>
+
+      {/* Área de lectura principal */}
+      <div className="flex items-center justify-center min-h-screen px-4">
+        <div className="relative w-full max-w-4xl">
           
-          {/* Efecto de viñeta sutil */}
-          <div className="absolute inset-0 bg-radial-fade pointer-events-none rounded-lg" />
-          
-          <div className={`relative h-48 ${currentTheme.cardBg} rounded-lg flex items-center justify-center shadow-2xl ${currentTheme.border} border overflow-hidden`}>
-            <AnimatePresence mode="wait">
+          {/* Display de palabra con transición suave */}
+          <div className="relative h-32 md:h-48 flex items-center justify-center">
+            <AnimatePresence mode="sync">
               <motion.div
                 key={currentIndex}
-                initial={{ opacity: 0, x: -10, filter: 'blur(2px)' }}
-                animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-                exit={{ opacity: 0, x: 10, filter: 'blur(2px)' }}
-                transition={{ 
-                  duration: wpm > 600 ? 0.08 : 0.15,
-                  ease: [0.4, 0, 0.2, 1]
+                initial={{ opacity: 0, x: -5 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 5 }}
+                transition={{
+                  duration: Math.min(0.08, 30000/wpm),
+                  ease: "linear"
                 }}
-                className="text-5xl md:text-7xl font-medium tracking-wide text-center px-8"
+                className="text-center select-none"
               >
-                <span className="opacity-80">{currentParts.pre}</span>
-                <span className={`${currentTheme.accent} font-bold focal-letter relative`}>
-                  {currentParts.focal}
-                  <span className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-current rounded-full opacity-50" />
+                <span className="text-5xl md:text-7xl lg:text-8xl font-light tracking-wide">
+                  <span className="text-amber-200/60">{wordParts.pre}</span>
+                  <span className="text-amber-100 font-normal">{wordParts.focal}</span>
+                  <span className="text-amber-200/60">{wordParts.post}</span>
                 </span>
-                <span className="opacity-80">{currentParts.post}</span>
-                {currentParts.rest && (
-                  <span className="opacity-60 ml-3">{currentParts.rest}</span>
-                )}
               </motion.div>
             </AnimatePresence>
           </div>
-        </div>
 
-        {/* Barra de progreso mejorada */}
-        <div className="w-full max-w-md mb-6">
-          <div className={`${currentTheme.cardBg} rounded-full h-3 relative overflow-hidden`}>
-            <div 
-              className="absolute inset-0 bg-gradient-to-r from-orange-500 to-orange-400 transition-all duration-500 ease-out"
-              style={{ width: `${progressPercentage}%` }}
-            />
-            
-            {/* Marcadores de párrafos sutiles */}
-            {paragraphIndices.map((paraIndex, i) => {
-              const position = (paraIndex / words.length) * 100;
-              return position > 0 && position < 100 && (
-                <div 
-                  key={i}
-                  className="absolute top-0 bottom-0 w-px bg-white/20"
-                  style={{ left: `${position}%` }}
-                />
-              );
-            })}
-          </div>
-          
-          <div className="flex justify-between text-xs mt-2">
-            <span className={currentTheme.textMuted}>
-              {Math.round(progressPercentage)}%
-            </span>
-            <span className={currentTheme.textMuted}>
-              {currentIndex + 1} / {words.length}
-            </span>
-            <span className={currentTheme.textMuted}>
-              {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
-            </span>
-          </div>
-        </div>
-
-        {/* Controles principales */}
-        <div className="flex items-center space-x-4 mb-6">
-          <button 
-            onClick={handlePlayPause} 
-            className={`p-5 ${currentTheme.button} rounded-full transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 text-white`}
-          >
-            {isPlaying ? <PauseIcon /> : <PlayIcon />}
-          </button>
-          <button 
-            onClick={handleRestart} 
-            className={`p-4 ${currentTheme.secondary} rounded-full transition-all duration-200 shadow-lg`}
-          >
-            <RestartIcon />
-          </button>
-          <button 
-            onClick={() => setShowSettings(!showSettings)} 
-            className={`p-4 ${currentTheme.secondary} rounded-full transition-all duration-200 shadow-lg`}
-          >
-            <SettingsIcon />
-          </button>
-        </div>
-
-        {/* Control de velocidad con presets */}
-        <div className="w-full max-w-md mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className={`text-lg font-medium ${currentTheme.accent}`}>
-              {wpm} PPM
-            </span>
-            
-            {/* Presets de velocidad */}
-            <div className="flex gap-1">
-              {Object.entries(speedPresets).map(([key, preset]) => (
-                <button
-                  key={key}
-                  onClick={() => {
-                    handleWpmChange(preset.wpm);
-                    showFeedback(preset.label);
-                  }}
-                  className={`text-xs px-3 py-1 rounded-full transition-all ${
-                    Math.abs(wpm - preset.wpm) < 50
-                      ? currentTheme.button + ' text-white'
-                      : currentTheme.secondary
-                  }`}
-                  title={preset.description}
-                >
-                  {preset.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          
-          <input 
-            type="range" 
-            min="50" 
-            max="1200" 
-            step="10" 
-            value={wpm} 
-            onChange={(e) => handleWpmChange(Number(e.target.value))} 
-            className="w-full slider-custom"
-          />
-        </div>
-
-        {/* Panel de estadísticas */}
-        <AnimatePresence>
-          {showStats && sessionStats && (
+          {/* Indicador de progreso ultra minimalista */}
+          <div className="absolute -bottom-20 left-0 right-0 h-px bg-amber-900/20">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className={`fixed inset-0 flex items-center justify-center p-4 bg-black/50 z-40`}
-              onClick={() => setShowStats(false)}
-            >
-              <div 
-                className={`${currentTheme.cardBg} rounded-xl p-8 max-w-md w-full shadow-2xl ${currentTheme.border} border`}
-                onClick={(e) => e.stopPropagation()}
+              className="h-full bg-gradient-to-r from-transparent via-amber-400/40 to-transparent"
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.3 }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Controles flotantes en píldora */}
+      <AnimatePresence>
+        {showControls && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.3 }}
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40"
+          >
+            <div className="flex items-center gap-6 px-6 py-4 bg-stone-900/80 backdrop-blur-md rounded-full border border-amber-900/20">
+              {/* Play/Pause */}
+              <button
+                onClick={togglePlay}
+                className="text-amber-100/80 hover:text-amber-100 transition-colors text-2xl"
+                aria-label={isPlaying ? 'Pausar' : 'Reproducir'}
               >
-                <h3 className="text-2xl font-bold mb-6">Sesión Completada</h3>
-                
-                <div className="space-y-4">
-                  <div className="flex justify-between">
-                    <span className={currentTheme.textMuted}>Palabras leídas:</span>
-                    <span className="font-medium">{sessionStats.wordsRead}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className={currentTheme.textMuted}>Tiempo total:</span>
-                    <span className="font-medium">
-                      {Math.floor(sessionStats.totalTime / 60)}:{(sessionStats.totalTime % 60).toString().padStart(2, '0')}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className={currentTheme.textMuted}>Velocidad promedio:</span>
-                    <span className="font-medium">{sessionStats.averageWpm} PPM</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className={currentTheme.textMuted}>Pausas:</span>
-                    <span className="font-medium">{sessionStats.pauseCount}</span>
+                {isPlaying ? '॥' : '▶'}
+              </button>
+
+              {/* Velocidad */}
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => adjustSpeed(-25)}
+                  className="text-amber-100/60 hover:text-amber-100 transition-colors text-xl"
+                >
+                  −
+                </button>
+
+                <span className="text-amber-100/80 text-sm font-light min-w-[70px] text-center">
+                  {wpm} ppm
+                </span>
+
+                <button
+                  onClick={() => adjustSpeed(25)}
+                  className="text-amber-100/60 hover:text-amber-100 transition-colors text-xl"
+                >
+                  +
+                </button>
+              </div>
+
+              {/* Restart */}
+              <button
+                onClick={restart}
+                className="text-amber-100/60 hover:text-amber-100 transition-colors text-xl"
+                aria-label="Reiniciar"
+              >
+                ↺
+              </button>
+
+              {/* Config */}
+              <button
+                onClick={() => setShowConfig(!showConfig)}
+                className="text-amber-100/60 hover:text-amber-100 transition-colors text-xl"
+                aria-label="Configuración"
+              >
+                ⋮
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Panel de configuración modal */}
+      <AnimatePresence>
+        {showConfig && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-50"
+            onClick={() => setShowConfig(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+              className="bg-stone-900/90 backdrop-blur rounded-2xl p-6 md:p-8 max-w-2xl w-full max-h-[80vh] overflow-y-auto"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="space-y-6">
+                {/* Header */}
+                <div className="flex justify-between items-center">
+                  <h2 className="text-xl font-light text-amber-100/80">Configuración</h2>
+                  <button
+                    onClick={() => setShowConfig(false)}
+                    className="text-amber-100/40 hover:text-amber-100 text-2xl"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                {/* Texto input */}
+                <div>
+                  <label className="text-amber-100/60 text-sm font-light mb-2 block">
+                    Tu texto
+                  </label>
+                  <textarea
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    className="w-full h-32 p-4 bg-black/30 text-amber-100/80 rounded-lg resize-none focus:outline-none focus:ring-1 focus:ring-amber-400/30 placeholder-amber-100/20"
+                    placeholder="Pega tu texto aquí..."
+                  />
+                </div>
+
+                {/* Cargar archivo */}
+                <div>
+                  <label className="text-amber-100/60 text-sm font-light mb-2 block">
+                    Cargar archivo
+                  </label>
+                  <input
+                    type="file"
+                    accept=".txt,.md"
+                    onChange={handleFileLoad}
+                    className="hidden"
+                    id="file-input"
+                  />
+                  <label
+                    htmlFor="file-input"
+                    className="block w-full p-3 bg-black/30 text-amber-100/80 rounded-lg text-center cursor-pointer hover:bg-black/40 transition-colors"
+                  >
+                    Seleccionar archivo (.txt, .md)
+                  </label>
+                </div>
+
+                {/* URL input */}
+                <div>
+                  <label className="text-amber-100/60 text-sm font-light mb-2 block">
+                    Cargar desde URL
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      placeholder="https://..."
+                      className="flex-1 p-3 bg-black/30 text-amber-100/80 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-400/30 placeholder-amber-100/20"
+                      id="url-input"
+                    />
+                    <button
+                      onClick={() => {
+                        const input = document.getElementById('url-input') as HTMLInputElement;
+                        if (input?.value) {
+                          loadFromUrl(input.value);
+                          input.value = '';
+                        }
+                      }}
+                      disabled={isLoading}
+                      className="px-6 py-3 bg-amber-400/20 text-amber-100 rounded-lg hover:bg-amber-400/30 transition-colors disabled:opacity-50"
+                    >
+                      {isLoading ? '...' : 'Cargar'}
+                    </button>
                   </div>
                 </div>
-                
-                <button
-                  onClick={() => setShowStats(false)}
-                  className={`w-full mt-6 py-3 ${currentTheme.button} rounded-lg text-white font-medium`}
-                >
-                  Cerrar
-                </button>
+
+                {/* Velocidad slider */}
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <label className="text-amber-100/60 text-sm font-light">
+                      Velocidad de lectura
+                    </label>
+                    <span className="text-amber-400 text-sm font-medium">
+                      {wpm} ppm
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="100"
+                    max="1000"
+                    step="25"
+                    value={wpm}
+                    onChange={(e) => setWpm(Number(e.target.value))}
+                    className="w-full slider-warm"
+                  />
+                  <div className="flex justify-between mt-2 text-xs text-amber-100/40">
+                    <span>Lento</span>
+                    <span>Normal</span>
+                    <span>Rápido</span>
+                  </div>
+                </div>
+
+                {/* Fuente dislexia toggle */}
+                <label className="flex items-center justify-between cursor-pointer group">
+                  <span className="text-amber-100/60 text-sm font-light">
+                    Fuente para dislexia
+                  </span>
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={useDyslexicFont}
+                      onChange={(e) => setUseDyslexicFont(e.target.checked)}
+                      className="sr-only"
+                    />
+                    <div className={`w-12 h-6 rounded-full transition-colors ${
+                      useDyslexicFont ? 'bg-amber-400/30' : 'bg-black/30'
+                    }`}>
+                      <div className={`w-5 h-5 bg-amber-100 rounded-full transition-transform ${
+                        useDyslexicFont ? 'translate-x-6' : 'translate-x-0.5'
+                      } transform mt-0.5`} />
+                    </div>
+                  </div>
+                </label>
+
+                {/* Info de progreso */}
+                {words.length > 0 && (
+                  <div className="p-4 bg-black/20 rounded-lg space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-amber-100/40">Total</span>
+                      <span className="text-amber-100/60">{words.length} palabras</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-amber-100/40">Tiempo estimado</span>
+                      <span className="text-amber-100/60">{formatTime(Math.ceil(words.length / wpm * 60))}</span>
+                    </div>
+                    {currentIndex > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-amber-100/40">Tiempo restante</span>
+                        <span className="text-amber-100/60">{formatTime(timeRemaining)}</span>
+                      </div>
+                    )}
+                    {sessionStats && (
+                      <>
+                        <div className="border-t border-amber-900/20 my-2"></div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-amber-100/40">Última sesión</span>
+                          <span className="text-amber-100/60">{sessionStats.averageWpm} ppm promedio</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* Atajos de teclado */}
+                <div className="text-amber-100/30 text-xs space-y-1 pt-4 border-t border-amber-900/20">
+                  <p>Espacio: play/pausa • R: reiniciar • ←→: velocidad • C: configuración</p>
+                  <p className="md:hidden">Desliza horizontal: velocidad • Vertical: configuración</p>
+                </div>
               </div>
             </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Panel de configuración */}
-        <AnimatePresence>
-          {showSettings && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className={`w-full max-w-4xl ${currentTheme.cardBg} rounded-lg p-6 mb-4 ${currentTheme.border} border`}
-            >
-              {/* Toggles de características */}
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <label className="flex items-center justify-between">
-                  <span>Modo Adaptativo</span>
-                  <input 
-                    type="checkbox" 
-                    checked={adaptiveMode}
-                    onChange={(e) => setAdaptiveMode(e.target.checked)}
-                    className="toggle-switch"
-                  />
-                </label>
-                
-                <label className="flex items-center justify-between">
-                  <span>Pausas de Respiración</span>
-                  <input 
-                    type="checkbox" 
-                    checked={showBreathingPauses}
-                    onChange={(e) => setShowBreathingPauses(e.target.checked)}
-                    className="toggle-switch"
-                  />
-                </label>
-                
-                <label className="flex items-center justify-between">
-                  <span>Chunking Inteligente</span>
-                  <input 
-                    type="checkbox" 
-                    checked={useSmartChunking}
-                    onChange={(e) => setUseSmartChunking(e.target.checked)}
-                    className="toggle-switch"
-                  />
-                </label>
-                
-                <label className="flex items-center justify-between">
-                  <span>Fuente OpenDyslexic</span>
-                  <input 
-                    type="checkbox" 
-                    checked={useDyslexicFont}
-                    onChange={(e) => setUseDyslexicFont(e.target.checked)}
-                    className="toggle-switch"
-                  />
-                </label>
-              </div>
-
-              {/* URL input */}
-              <div className="flex items-center space-x-2 mb-4">
-                <input 
-                  type="url" 
-                  value={url} 
-                  onChange={(e) => setUrl(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleFetchUrl()}
-                  placeholder="URL de artículo..." 
-                  className={`flex-grow p-3 ${currentTheme.cardBg} ${currentTheme.border} border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent`}
-                />
-                <button 
-                  onClick={handleFetchUrl} 
-                  disabled={isLoadingUrl}
-                  className={`py-3 px-6 ${currentTheme.button} disabled:opacity-50 rounded-lg transition-all duration-200 text-white font-medium`}
-                >
-                  {isLoadingUrl ? 'Cargando...' : 'Leer'}
-                </button>
-              </div>
-
-              {/* Archivo */}
-              <input 
-                type="file" 
-                accept=".txt,.md"
-                onChange={handleFileLoad}
-                className="hidden"
-                id="file-upload"
-              />
-              <label 
-                htmlFor="file-upload"
-                className={`${currentTheme.secondary} py-3 px-6 rounded-lg mb-4 cursor-pointer inline-block transition-all duration-200`}
-              >
-                📁 Cargar Archivo
-              </label>
-
-              {/* Textarea */}
-              <textarea 
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                className={`w-full h-32 p-4 ${currentTheme.cardBg} ${currentTheme.border} border rounded-lg resize-none focus:ring-2 focus:ring-orange-500 focus:border-transparent`}
-                placeholder="Escribe o pega tu texto aquí..."
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Atajos de teclado */}
-        {!showSettings && (
-          <div className={`text-xs ${currentTheme.textMuted} text-center space-y-1`}>
-            <div>
-              <kbd className={`px-2 py-1 ${currentTheme.cardBg} rounded`}>Espacio</kbd> Play/Pausa • 
-              <kbd className={`px-2 py-1 ${currentTheme.cardBg} rounded mx-1`}>R</kbd> Reiniciar • 
-              <kbd className={`px-2 py-1 ${currentTheme.cardBg} rounded`}>Z</kbd> Modo Zen • 
-              <kbd className={`px-2 py-1 ${currentTheme.cardBg} rounded mx-1`}>T</kbd> Tema
-            </div>
-            <div>
-              <kbd className={`px-2 py-1 ${currentTheme.cardBg} rounded`}>←→</kbd> Velocidad • 
-              <kbd className={`px-2 py-1 ${currentTheme.cardBg} rounded`}>Shift+←→</kbd> Párrafos • 
-              <kbd className={`px-2 py-1 ${currentTheme.cardBg} rounded mx-1`}>S</kbd> Estadísticas
-            </div>
-          </div>
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
     </div>
   );
 }
