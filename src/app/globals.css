@@ -1,9 +1,8 @@
-/* src/app/globals.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* OpenDyslexic font */
+/* --- Fuentes y Tema Base --- */
 @font-face {
   font-family: 'OpenDyslexic';
   src: url('/fonts/OpenDyslexic-Regular.otf') format('opentype');
@@ -12,50 +11,89 @@
   font-display: swap;
 }
 
-/* Prevenir flash blanco y establecer tema cálido */
-html, body {
-  background-color: #0a0908 !important;
-  color: #fff8f3 !important;
-  margin: 0;
-  padding: 0;
+:root {
+  --candle-black: #0a0908;
+  --candle-dark: #22201c;
+  --candle-amber: #f4a261;
+  --candle-cream: #fefae0;
 }
 
-/* Clase para fuente dislexia */
+html, body {
+  background-color: var(--candle-black);
+  color: var(--candle-cream);
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 .font-dyslexic {
   font-family: 'OpenDyslexic', sans-serif !important;
   letter-spacing: 0.05em;
 }
 
-/* Suavizado de fuentes */
-body {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* Transiciones globales suaves */
+/* --- Transiciones y Animaciones Globales --- */
 * {
-  transition-property: opacity, transform;
+  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
   transition-duration: 200ms;
-  transition-timing-function: ease-out;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Reset de button */
-button {
-  -webkit-tap-highlight-color: transparent;
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* --- Componentes Personalizados --- */
+
+/* Slider de velocidad */
+.slider-warm {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 3px;
+  background: var(--candle-dark);
   outline: none;
+  border-radius: 3px;
 }
 
-/* Scrollbar personalizada para el menú */
+.slider-warm::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: var(--candle-amber);
+  cursor: pointer;
+  border-radius: 50%;
+  border: 2px solid var(--candle-cream);
+  box-shadow: 0 0 10px rgba(244, 162, 97, 0.4);
+}
+
+.slider-warm::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: var(--candle-amber);
+  cursor: pointer;
+  border-radius: 50%;
+  border: 2px solid var(--candle-cream);
+  box-shadow: 0 0 10px rgba(244, 162, 97, 0.4);
+}
+
+/* Scrollbar minimalista */
 ::-webkit-scrollbar {
   width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0a0908;
+  background: var(--candle-black);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2a2622;
+  background: var(--candle-dark);
   border-radius: 3px;
 }
 
@@ -63,37 +101,20 @@ button {
   background: #3a3632;
 }
 
-/* Animación suave para palabras */
-@keyframes fadeWord {
-  from {
-    opacity: 0;
-    transform: translateX(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-/* Disable text selection en área de lectura */
+/* --- Utilidades y Accesibilidad --- */
 .select-none {
+  user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
-  user-select: none;
 }
 
-/* Focus styles para accesibilidad */
 :focus-visible {
-  outline: 2px solid #f4a261;
+  outline: 2px solid var(--candle-amber);
   outline-offset: 2px;
+  border-radius: 4px;
 }
 
-/* Media query para preferencia de movimiento reducido */
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
+button {
+  -webkit-tap-highlight-color: transparent;
 }
