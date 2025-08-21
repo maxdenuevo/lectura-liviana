@@ -3,45 +3,44 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// --- Tipos ---
 interface SessionStats {
   wordsRead: number;
   totalTime: number;
   averageWpm: number;
 }
 
-// --- Componente Principal ---
+const CONTROLS_HIDE_DELAY = 3000;
+
 export default function RSVPReader() {
-  // --- Estados principales ---
+  // Estados principales
   const [text, setText] = useState('');
   const [wpm, setWpm] = useState(300);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [useDyslexicFont, setUseDyslexicFont] = useState(false);
   
-  // --- Estados de UI ---
+  // Estados de UI
   const [showControls, setShowControls] = useState(true);
   const [showConfig, setShowConfig] = useState(false);
   const [notification, setNotification] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  // --- Estados de sesión ---
+  // Estados de sesión
   const [sessionStats, setSessionStats] = useState<SessionStats | null>(null);
   const sessionStartTime = useRef<number>(0);
   const wordsReadInSession = useRef<number>(0);
   
-  // --- Refs ---
-  const containerRef = useRef<HTMLDivElement>(null);
+  // Refs
   const controlsTimeout = useRef<NodeJS.Timeout | null>(null);
+  const mouseMoveTimeout = useRef<NodeJS.Timeout | null>(null);
   const touchStartX = useRef<number>(0);
   const touchStartY = useRef<number>(0);
+  const isHoveringControls = useRef<boolean>(false);
 
-  // --- Texto por defecto ---
   const DEFAULT_TEXT = "Bienvenido a tu espacio de lectura rápida. Un lugar cálido y minimalista donde las palabras fluyen con naturalidad. Presiona espacio o toca la pantalla para comenzar.";
 
-  // --- Cargar configuración inicial ---
+  // Cargar configuración inicial
   useEffect(() => {
-    // Se envuelve en un try-catch por si localStorage no está disponible (ej. en SSR)
     try {
       const savedText = localStorage.getItem('savedText');
       setText(savedText || DEFAULT_TEXT);
@@ -53,56 +52,93 @@ export default function RSVPReader() {
     }
   }, []);
 
-  // --- Procesar palabras ---
+  // Procesar palabras
   const words = useMemo(() => {
     return text.trim().split(/\s+/).filter(Boolean);
   }, [text]);
 
-  // --- Auto-ocultar controles ---
-  const showControlsTemporarily = useCallback(() => {
-    setShowControls(true);
-    if (controlsTimeout.current) clearTimeout(controlsTimeout.current);
+  // Auto-hide mejorado
+  const startAutoHideTimer = useCallback(() => {
+    if (controlsTimeout.current) {
+      clearTimeout(controlsTimeout.current);
+    }
     
-    if (isPlaying) {
+    if (isPlaying && !isHoveringControls.current) {
       controlsTimeout.current = setTimeout(() => {
         setShowControls(false);
-      }, 5000);
+      }, CONTROLS_HIDE_DELAY);
     }
   }, [isPlaying]);
 
-  // --- Lógica para mostrar/ocultar controles ---
+  const showControlsTemporarily = useCallback(() => {
+    setShowControls(true);
+    startAutoHideTimer();
+  }, [startAutoHideTimer]);
+
+  // Event listeners
   useEffect(() => {
     const handleMouseMove = () => {
-      setShowControls(true);
-      if (controlsTimeout.current) clearTimeout(controlsTimeout.current);
-      if (isPlaying) {
-        controlsTimeout.current = setTimeout(() => {
-          setShowControls(false);
-        }, 5000);
+      if (mouseMoveTimeout.current) {
+        clearTimeout(mouseMoveTimeout.current);
+      }
+      
+      mouseMoveTimeout.current = setTimeout(() => {
+        if (isPlaying && !isHoveringControls.current) {
+          showControlsTemporarily();
+        }
+      }, 150);
+    };
+
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) return;
+      
+      e.preventDefault();
+      
+      switch(e.key) {
+        case ' ': 
+          togglePlay(); 
+          break;
+        case 'r': 
+        case 'R': 
+          restart(); 
+          break;
+        case 'ArrowRight': 
+          adjustSpeed(25); 
+          break;
+        case 'ArrowLeft': 
+          adjustSpeed(-25); 
+          break;
+        case 'Escape': 
+          setShowConfig(false); 
+          break;
+        case 'c': 
+        case 'C': 
+          setShowConfig(prev => !prev); 
+          break;
       }
     };
     
-    const handleTouch = () => {
-      showControlsTemporarily();
-    };
-    
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('touchstart', handleTouch);
-    
-    // Muestra los controles si el lector está pausado
-    if (!isPlaying) {
+    if (isPlaying) {
+      window.addEventListener('mousemove', handleMouseMove);
+    } else {
       setShowControls(true);
-      if (controlsTimeout.current) clearTimeout(controlsTimeout.current);
+      if (controlsTimeout.current) {
+        clearTimeout(controlsTimeout.current);
+      }
     }
+    
+    window.addEventListener('keydown', handleKeyPress);
     
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('touchstart', handleTouch);
-      if (controlsTimeout.current) clearTimeout(controlsTimeout.current);
+      window.removeEventListener('keydown', handleKeyPress);
+      if (mouseMoveTimeout.current) {
+        clearTimeout(mouseMoveTimeout.current);
+      }
     };
   }, [isPlaying, showControlsTemporarily]);
 
-  // --- Timer principal de lectura ---
+  // Timer principal de lectura
   useEffect(() => {
     if (!isPlaying || currentIndex >= words.length) {
       if (currentIndex >= words.length && sessionStartTime.current > 0) {
@@ -144,7 +180,7 @@ export default function RSVPReader() {
     return () => clearTimeout(timer);
   }, [isPlaying, currentIndex, words, wpm]);
 
-  // --- Guardar preferencias ---
+  // Guardar preferencias
   useEffect(() => {
     try {
       localStorage.setItem('savedWpm', wpm.toString());
@@ -157,7 +193,7 @@ export default function RSVPReader() {
     }
   }, [wpm, text, useDyslexicFont, DEFAULT_TEXT]);
 
-  // --- Calcular punto focal (ORP) ---
+  // Calcular punto focal (ORP)
   const getWordParts = (word: string) => {
     if (!word) return { pre: '', focal: '', post: '' };
     const len = word.length;
@@ -175,21 +211,21 @@ export default function RSVPReader() {
     };
   };
 
-  // --- Mostrar notificación ---
+  // Mostrar notificación
   const showNotification = (message: string) => {
     setNotification(message);
     setTimeout(() => setNotification(''), 2000);
   };
 
-  // --- Handlers ---
+  // Handlers
   const togglePlay = useCallback(() => {
     if (!words.length) return;
     if (currentIndex >= words.length) {
       setCurrentIndex(0);
     }
     setIsPlaying(prev => !prev);
-    setShowControls(true);
-  }, [currentIndex, words.length]);
+    showControlsTemporarily();
+  }, [currentIndex, words.length, showControlsTemporarily]);
 
   const restart = useCallback(() => {
     setIsPlaying(false);
@@ -207,10 +243,10 @@ export default function RSVPReader() {
       showNotification(`${newWpm} ppm`);
       return newWpm;
     });
-    setShowControls(true);
-  }, []);
+    showControlsTemporarily();
+  }, [showControlsTemporarily]);
 
-  // --- Handlers para gestos en móvil ---
+  // Handlers para gestos móvil
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
@@ -231,58 +267,7 @@ export default function RSVPReader() {
     }
   };
 
-  // --- Atajos de teclado ---
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) return;
-      e.preventDefault();
-      switch(e.key) {
-        case ' ': togglePlay(); break;
-        case 'r': case 'R': restart(); break;
-        case 'ArrowRight': adjustSpeed(25); break;
-        case 'ArrowLeft': adjustSpeed(-25); break;
-        case 'Escape': setShowConfig(false); break;
-        case 'c': case 'C': setShowConfig(prev => !prev); break;
-      }
-    };
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [togglePlay, restart, adjustSpeed]);
-
-  // --- Cargar desde URL (Requiere una API en /api/fetch-url) ---
-  const loadFromUrl = async (url: string) => {
-    if (!url.startsWith('http')) {
-      showNotification('URL inválida');
-      return;
-    }
-    setIsLoading(true);
-    try {
-      // NOTA: Esta llamada a fetch requiere que tengas un endpoint de API
-      // en tu proyecto que reciba una URL y devuelva su contenido.
-      const response = await fetch('/api/fetch-url', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url })
-      });
-      if (!response.ok) throw new Error('Respuesta de red no fue OK');
-      const data = await response.json();
-      if (data.content) {
-        setText(data.content);
-        restart();
-        setShowConfig(false);
-        showNotification('Artículo cargado');
-      } else {
-        showNotification(data.error || 'Error al cargar contenido');
-      }
-    } catch (err) {
-      showNotification('Error de conexión o API');
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // --- Cargar archivo local ---
+  // Cargar archivo local
   const handleFileLoad = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -299,13 +284,10 @@ export default function RSVPReader() {
     reader.readAsText(file);
   };
   
-  // --- Cálculos para la UI ---
+  // Cálculos para la UI
   const currentWord = words[currentIndex] || '';
   const wordParts = getWordParts(currentWord);
   const progress = words.length > 0 ? (currentIndex / words.length) * 100 : 0;
-  // NOTA: Reemplazamos 'font-dyslexic' por una fuente estándar como 'font-serif'
-  // para asegurar que funcione sin necesidad de configurar fuentes personalizadas.
-  const fontClass = useDyslexicFont ? 'font-serif' : 'font-sans';
   
   const timeRemaining = useMemo(() => {
     if (!words.length || currentIndex >= words.length) return 0;
@@ -320,190 +302,637 @@ export default function RSVPReader() {
   };
 
   return (
-    <div
-      ref={containerRef}
-      // NOTA: Reemplazamos 'bg-candlelight' por un color estándar de Tailwind.
-      className={`min-h-screen bg-gray-900 text-gray-200 ${fontClass} transition-all duration-300`}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-    >
-      {/* Estilos para el slider, añadidos aquí para que el componente sea autocontenido */}
-      <style>{`
+    <>
+      <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+        
+        @font-face {
+          font-family: 'OpenDyslexic';
+          src: url('/fonts/OpenDyslexic-Regular.otf') format('opentype');
+          font-weight: normal;
+          font-style: normal;
+          font-display: swap;
+        }
+        
+        .font-dyslexic {
+          font-family: 'OpenDyslexic', serif !important;
+          letter-spacing: 0.05em;
+        }
+        
         .slider-warm {
           -webkit-appearance: none;
           appearance: none;
           width: 100%;
           height: 4px;
-          background: rgba(252, 211, 77, 0.2);
+          background: rgba(251, 191, 36, 0.2);
           border-radius: 5px;
           outline: none;
         }
+        
         .slider-warm::-webkit-slider-thumb {
           -webkit-appearance: none;
           appearance: none;
           width: 20px;
           height: 20px;
-          background: #fde68a;
+          background: #fbbf24;
           cursor: pointer;
           border-radius: 50%;
         }
+        
         .slider-warm::-moz-range-thumb {
           width: 20px;
           height: 20px;
-          background: #fde68a;
+          background: #fbbf24;
           cursor: pointer;
           border-radius: 50%;
+          border: none;
         }
       `}</style>
-
-      {/* Notificación flotante */}
-      <AnimatePresence>
-        {notification && (
-          <motion.div
-            initial={{ opacity: 0, y: -20, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.9 }}
-            className="fixed top-8 left-1/2 -translate-x-1/2 px-6 py-3 bg-stone-900/90 backdrop-blur-md rounded-full text-amber-400 text-sm font-light z-50"
-          >
-            {notification}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Botón flotante de menú */}
-      <button
-        onClick={() => setShowConfig(true)}
-        className="fixed top-6 right-6 w-12 h-12 bg-stone-900/50 backdrop-blur-md rounded-full flex items-center justify-center text-amber-100/40 hover:text-amber-100 hover:bg-stone-900/70 transition-all z-30 text-2xl"
-        aria-label="Menú"
+      
+      <div
+        className={`h-screen overflow-hidden ${useDyslexicFont ? 'font-dyslexic' : ''}`}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        style={{
+          fontFamily: useDyslexicFont ? 'OpenDyslexic, serif' : 'Inter, sans-serif',
+          backgroundColor: '#1c1917',
+          color: '#e7e5e4',
+        }}
       >
-        ≡
-      </button>
-
-      {/* Indicador de estado */}
-      {!isPlaying && words.length > 0 && (
-        <div className="fixed top-6 left-6 text-amber-100/40 text-sm font-light">
-          {Math.round(progress)}% leído
-        </div>
-      )}
-
-      {/* Área de lectura principal */}
-      <div className="flex items-center justify-center min-h-screen px-4">
-        <div className="relative w-full max-w-4xl">
-          <div className="relative h-32 md:h-48 flex items-center justify-center">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentIndex}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.1 }}
-                className="text-center select-none"
-              >
-                <span className="text-5xl md:text-7xl lg:text-8xl font-light tracking-wide">
-                  <span className="text-amber-200/60">{wordParts.pre}</span>
-                  <span className="text-amber-100 font-normal">{wordParts.focal}</span>
-                  <span className="text-amber-200/60">{wordParts.post}</span>
-                </span>
-              </motion.div>
-            </AnimatePresence>
-          </div>
-
-          {/* Indicador de progreso */}
-          <div className="absolute -bottom-20 left-0 right-0 h-0.5 bg-amber-900/20">
+        {/* Notificación flotante */}
+        <AnimatePresence mode="wait">
+          {notification && (
             <motion.div
-              className="h-full bg-amber-400/40"
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.3, ease: 'linear' }}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Controles flotantes */}
-      <motion.div
-        initial={false}
-        animate={{ opacity: showControls ? 1 : 0, y: showControls ? 0 : 20 }}
-        transition={{ duration: 0.3 }}
-        className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40"
-        onMouseEnter={() => setShowControls(true)}
-      >
-        <div className="flex items-center gap-6 px-6 py-4 bg-stone-900/80 backdrop-blur-md rounded-full border border-amber-900/20">
-          <button onClick={() => adjustSpeed(-25)} className="text-amber-100/60 hover:text-amber-100 transition-colors text-xl">−</button>
-          <span className="text-amber-100/80 text-sm font-light min-w-[70px] text-center">{wpm} ppm</span>
-          <button onClick={() => adjustSpeed(25)} className="text-amber-100/60 hover:text-amber-100 transition-colors text-xl">+</button>
-          <div className="w-px h-6 bg-amber-900/30"></div>
-          <button onClick={togglePlay} className="text-amber-100/80 hover:text-amber-100 transition-colors text-2xl" aria-label={isPlaying ? 'Pausar' : 'Reproducir'}>{isPlaying ? '॥' : '▶'}</button>
-          <div className="w-px h-6 bg-amber-900/30"></div>
-          <button onClick={restart} className="text-amber-100/60 hover:text-amber-100 transition-colors text-xl" aria-label="Reiniciar">↺</button>
-        </div>
-      </motion.div>
-
-      {/* Panel de configuración modal */}
-      <AnimatePresence>
-        {showConfig && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-50"
-            onClick={() => setShowConfig(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="bg-stone-900/90 backdrop-blur rounded-2xl p-6 md:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-              onClick={e => e.stopPropagation()}
+              key={`notification-${notification}`}
+              initial={{ opacity: 0, y: -20, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.9 }}
+              style={{
+                position: 'fixed',
+                top: '2rem',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                padding: '0.75rem 1.5rem',
+                borderRadius: '9999px',
+                fontSize: '0.875rem',
+                fontWeight: '300',
+                zIndex: 50,
+                pointerEvents: 'none',
+                backgroundColor: 'rgba(28, 25, 23, 0.9)',
+                backdropFilter: 'blur(12px)',
+                color: '#fbbf24',
+              }}
             >
-              <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-xl font-light text-amber-100/80">Configuración</h2>
-                  <button onClick={() => setShowConfig(false)} className="text-amber-100/40 hover:text-amber-100 text-2xl">×</button>
-                </div>
-                <div>
-                  <label className="text-amber-100/60 text-sm font-light mb-2 block">Tu texto</label>
-                  <textarea value={text} onChange={(e) => setText(e.target.value)} className="w-full h-32 p-4 bg-black/30 text-amber-100/80 rounded-lg resize-none focus:outline-none focus:ring-1 focus:ring-amber-400/30 placeholder-amber-100/20" placeholder="Pega tu texto aquí..."/>
-                </div>
-                <div>
-                  <label htmlFor="file-input" className="block w-full p-3 bg-black/30 text-amber-100/80 rounded-lg text-center cursor-pointer hover:bg-black/40 transition-colors">Seleccionar archivo (.txt, .md)</label>
-                  <input type="file" accept=".txt,.md" onChange={handleFileLoad} className="hidden" id="file-input"/>
-                </div>
-                <div>
-                  <label className="text-amber-100/60 text-sm font-light mb-2 block">Cargar desde URL</label>
-                  <div className="flex gap-2">
-                    <input type="url" placeholder="https://..." className="flex-1 p-3 bg-black/30 text-amber-100/80 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-400/30 placeholder-amber-100/20" id="url-input"/>
-                    <button onClick={() => { const input = document.getElementById('url-input') as HTMLInputElement; if (input?.value) loadFromUrl(input.value); }} disabled={isLoading} className="px-6 py-3 bg-amber-400/20 text-amber-100 rounded-lg hover:bg-amber-400/30 transition-colors disabled:opacity-50">{isLoading ? '...' : 'Cargar'}</button>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <label className="text-amber-100/60 text-sm font-light">Velocidad de lectura</label>
-                    <span className="text-amber-400 text-sm font-medium">{wpm} ppm</span>
-                  </div>
-                  <input type="range" min="100" max="1000" step="25" value={wpm} onChange={(e) => setWpm(Number(e.target.value))} className="w-full slider-warm"/>
-                </div>
-                <label className="flex items-center justify-between cursor-pointer">
-                  <span className="text-amber-100/60 text-sm font-light">Fuente alternativa (Serif)</span>
-                  <div className="relative"><input type="checkbox" checked={useDyslexicFont} onChange={(e) => setUseDyslexicFont(e.target.checked)} className="sr-only"/><div className={`w-12 h-6 rounded-full transition-colors ${useDyslexicFont ? 'bg-amber-400/30' : 'bg-black/30'}`}><div className={`w-5 h-5 bg-amber-100 rounded-full transition-transform ${useDyslexicFont ? 'translate-x-6' : 'translate-x-1'} transform m-0.5`}/></div></div>
-                </label>
-                {words.length > 0 && (
-                  <div className="p-4 bg-black/20 rounded-lg space-y-2">
-                    <div className="flex justify-between text-sm"><span className="text-amber-100/40">Total</span><span className="text-amber-100/60">{words.length} palabras</span></div>
-                    <div className="flex justify-between text-sm"><span className="text-amber-100/40">Tiempo estimado</span><span className="text-amber-100/60">{formatTime(Math.ceil(words.length / wpm * 60))}</span></div>
-                    {currentIndex > 0 && (<div className="flex justify-between text-sm"><span className="text-amber-100/40">Tiempo restante</span><span className="text-amber-100/60">{formatTime(timeRemaining)}</span></div>)}
-                    {sessionStats && (<><div className="border-t border-amber-900/20 my-2"></div><div className="flex justify-between text-sm"><span className="text-amber-100/40">Última sesión</span><span className="text-amber-100/60">{sessionStats.averageWpm} ppm promedio</span></div></>)}
-                  </div>
-                )}
-                <div className="text-amber-100/30 text-xs space-y-1 pt-4 border-t border-amber-900/20">
-                  <p><b>Espacio:</b> play/pausa • <b>R:</b> reiniciar • <b>←→:</b> velocidad • <b>C:</b> config</p>
-                  <p className="md:hidden"><b>Tap:</b> play/pausa • <b>Swipe H:</b> velocidad • <b>Swipe V:</b> config</p>
-                </div>
+              {notification}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Botón flotante de menú - Reposicionado */}
+        <button
+          onClick={() => setShowConfig(true)}
+          style={{
+            position: 'fixed',
+            top: '1.5rem',
+            right: '1.5rem',
+            width: '3rem',
+            height: '3rem',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '1.5rem',
+            zIndex: 50,
+            backgroundColor: 'rgba(28, 25, 23, 0.7)',
+            backdropFilter: 'blur(12px)',
+            color: 'rgba(231, 229, 228, 0.4)',
+            border: 'none',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = '#e7e5e4';
+            e.currentTarget.style.backgroundColor = 'rgba(28, 25, 23, 0.9)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = 'rgba(231, 229, 228, 0.4)';
+            e.currentTarget.style.backgroundColor = 'rgba(28, 25, 23, 0.7)';
+          }}
+          aria-label="Menú"
+        >
+          ≡
+        </button>
+
+        {/* Indicador de estado - Reposicionado */}
+        {!isPlaying && words.length > 0 && (
+          <div 
+            style={{
+              position: 'fixed',
+              top: '1.5rem',
+              left: '1.5rem',
+              fontSize: '0.875rem',
+              fontWeight: '300',
+              zIndex: 40,
+              color: 'rgba(231, 229, 228, 0.4)',
+            }}
+          >
+            {Math.round(progress)}% leído
+          </div>
+        )}
+
+        {/* Área de lectura principal */}
+        <div 
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '100%',
+            maxWidth: '64rem',
+            padding: '0 1rem',
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            {/* Contenedor de la palabra */}
+            <div 
+              style={{
+                position: 'relative',
+                height: '8rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '100%',
+              }}
+            >
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentIndex}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.1 }}
+                  style={{
+                    textAlign: 'center',
+                    userSelect: 'none',
+                  }}
+                >
+                  <span 
+                    style={{
+                      fontSize: 'clamp(3rem, 8vw, 6rem)',
+                      fontWeight: '300',
+                      letterSpacing: '0.05em',
+                    }}
+                  >
+                    <span style={{ color: 'rgba(252, 211, 77, 0.6)' }}>{wordParts.pre}</span>
+                    <span style={{ color: '#fcd34d', fontWeight: '400' }}>{wordParts.focal}</span>
+                    <span style={{ color: 'rgba(252, 211, 77, 0.6)' }}>{wordParts.post}</span>
+                  </span>
+                </motion.div>
+              </AnimatePresence>
+            </div>
+            
+            {/* Indicador de progreso - CORREGIDO */}
+            <div 
+              style={{
+                width: '100%',
+                maxWidth: '28rem',
+                marginTop: '2rem',
+                height: '2px',
+                backgroundColor: 'rgba(180, 83, 9, 0.2)',
+                borderRadius: '1px',
+              }}
+            >
+              <motion.div
+                style={{
+                  height: '100%',
+                  backgroundColor: 'rgba(251, 191, 36, 0.6)',
+                  borderRadius: '1px',
+                }}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 0.3, ease: 'linear' }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Controles flotantes - CORREGIDOS */}
+        <AnimatePresence>
+          {showControls && (
+            <motion.div
+              key="controls"
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.95 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              style={{
+                position: 'fixed',
+                bottom: '2rem',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                zIndex: 40,
+              }}
+              onMouseEnter={() => {
+                isHoveringControls.current = true;
+                if (controlsTimeout.current) {
+                  clearTimeout(controlsTimeout.current);
+                }
+              }}
+              onMouseLeave={() => {
+                isHoveringControls.current = false;
+                startAutoHideTimer();
+              }}
+            >
+              <div 
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '1.5rem',
+                  padding: '1rem 1.5rem',
+                  borderRadius: '9999px',
+                  border: '1px solid rgba(180, 83, 9, 0.2)',
+                  backgroundColor: 'rgba(28, 25, 23, 0.8)',
+                  backdropFilter: 'blur(12px)',
+                  boxShadow: '0 10px 25px rgba(180, 83, 9, 0.1)',
+                }}
+              >
+                <button 
+                  onClick={() => adjustSpeed(-25)} 
+                  style={{
+                    fontSize: '1.25rem',
+                    color: 'rgba(231, 229, 228, 0.6)',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'color 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = '#e7e5e4'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(231, 229, 228, 0.6)'}
+                >
+                  −
+                </button>
+                
+                <span 
+                  style={{
+                    fontSize: '0.875rem',
+                    fontWeight: '300',
+                    minWidth: '70px',
+                    textAlign: 'center',
+                    color: 'rgba(231, 229, 228, 0.8)',
+                  }}
+                >
+                  {wpm} ppm
+                </span>
+                
+                <button 
+                  onClick={() => adjustSpeed(25)} 
+                  style={{
+                    fontSize: '1.25rem',
+                    color: 'rgba(231, 229, 228, 0.6)',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'color 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = '#e7e5e4'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(231, 229, 228, 0.6)'}
+                >
+                  +
+                </button>
+                
+                <div 
+                  style={{
+                    width: '1px',
+                    height: '1.5rem',
+                    backgroundColor: 'rgba(180, 83, 9, 0.3)',
+                  }}
+                />
+                
+                <button 
+                  onClick={togglePlay} 
+                  style={{
+                    fontSize: '1.5rem',
+                    color: 'rgba(231, 229, 228, 0.8)',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'color 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = '#e7e5e4'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(231, 229, 228, 0.8)'}
+                  aria-label={isPlaying ? 'Pausar' : 'Reproducir'}
+                >
+                  {isPlaying ? '॥' : '▶'}
+                </button>
+                
+                <div 
+                  style={{
+                    width: '1px',
+                    height: '1.5rem',
+                    backgroundColor: 'rgba(180, 83, 9, 0.3)',
+                  }}
+                />
+                
+                <button 
+                  onClick={restart} 
+                  style={{
+                    fontSize: '1.25rem',
+                    color: 'rgba(231, 229, 228, 0.6)',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'color 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = '#e7e5e4'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(231, 229, 228, 0.6)'}
+                  aria-label="Reiniciar"
+                >
+                  ↺
+                </button>
               </div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+          )}
+        </AnimatePresence>
+
+        {/* Panel de configuración modal - CORREGIDO */}
+        <AnimatePresence>
+          {showConfig && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '1rem',
+                zIndex: 50,
+                backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                backdropFilter: 'blur(12px)',
+              }}
+              onClick={(e) => {
+                if (e.target === e.currentTarget) {
+                  setShowConfig(false);
+                }
+              }}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                style={{
+                  borderRadius: '1rem',
+                  padding: '2rem',
+                  maxWidth: '32rem',
+                  width: '100%',
+                  maxHeight: '90vh',
+                  overflowY: 'auto',
+                  backgroundColor: 'rgba(28, 25, 23, 0.95)',
+                  backdropFilter: 'blur(12px)',
+                }}
+                onClick={e => e.stopPropagation()}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h2 
+                      style={{
+                        fontSize: '1.25rem',
+                        fontWeight: '300',
+                        color: 'rgba(252, 211, 77, 0.8)',
+                        margin: 0,
+                      }}
+                    >
+                      Configuración
+                    </h2>
+                    <button 
+                      onClick={() => setShowConfig(false)} 
+                      style={{
+                        fontSize: '1.5rem',
+                        color: 'rgba(231, 229, 228, 0.4)',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        transition: 'color 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = '#e7e5e4'}
+                      onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(231, 229, 228, 0.4)'}
+                    >
+                      ×
+                    </button>
+                  </div>
+                  
+                  <div>
+                    <label 
+                      style={{
+                        fontSize: '0.875rem',
+                        fontWeight: '300',
+                        marginBottom: '0.5rem',
+                        display: 'block',
+                        color: 'rgba(252, 211, 77, 0.6)',
+                      }}
+                    >
+                      Tu texto
+                    </label>
+                    <textarea 
+                      value={text} 
+                      onChange={(e) => setText(e.target.value)} 
+                      style={{
+                        width: '100%',
+                        height: '8rem',
+                        padding: '1rem',
+                        borderRadius: '0.5rem',
+                        resize: 'none',
+                        border: 'none',
+                        outline: 'none',
+                        backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                        color: 'rgba(252, 211, 77, 0.8)',
+                        fontSize: '0.875rem',
+                      }}
+                      placeholder="Pega tu texto aquí..."
+                    />
+                  </div>
+                  
+                  <div>
+                    <label 
+                      htmlFor="file-input" 
+                      style={{
+                        display: 'block',
+                        width: '100%',
+                        padding: '0.75rem',
+                        borderRadius: '0.5rem',
+                        textAlign: 'center',
+                        cursor: 'pointer',
+                        backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                        color: 'rgba(252, 211, 77, 0.8)',
+                        border: 'none',
+                        transition: 'background-color 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.4)'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.3)'}
+                    >
+                      Seleccionar archivo (.txt, .md)
+                    </label>
+                    <input 
+                      type="file" 
+                      accept=".txt,.md" 
+                      onChange={handleFileLoad} 
+                      style={{ display: 'none' }}
+                      id="file-input"
+                    />
+                  </div>
+                  
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                      <label 
+                        style={{
+                          fontSize: '0.875rem',
+                          fontWeight: '300',
+                          color: 'rgba(252, 211, 77, 0.6)',
+                        }}
+                      >
+                        Velocidad de lectura
+                      </label>
+                      <span 
+                        style={{
+                          fontSize: '0.875rem',
+                          fontWeight: '500',
+                          color: '#fbbf24',
+                        }}
+                      >
+                        {wpm} ppm
+                      </span>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="100" 
+                      max="1000" 
+                      step="25" 
+                      value={wpm} 
+                      onChange={(e) => setWpm(Number(e.target.value))} 
+                      className="slider-warm"
+                    />
+                  </div>
+                  
+                  <label 
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <span 
+                      style={{
+                        fontSize: '0.875rem',
+                        fontWeight: '300',
+                        color: 'rgba(252, 211, 77, 0.6)',
+                      }}
+                    >
+                      Fuente OpenDyslexic (especial para dislexia)
+                    </span>
+                    <div style={{ position: 'relative' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={useDyslexicFont} 
+                        onChange={(e) => setUseDyslexicFont(e.target.checked)} 
+                        style={{ 
+                          position: 'absolute',
+                          width: '1px',
+                          height: '1px',
+                          padding: 0,
+                          margin: '-1px',
+                          overflow: 'hidden',
+                          clip: 'rect(0, 0, 0, 0)',
+                          whiteSpace: 'nowrap',
+                          border: 0,
+                        }}
+                      />
+                      <div 
+                        style={{
+                          width: '3rem',
+                          height: '1.5rem',
+                          borderRadius: '0.75rem',
+                          backgroundColor: useDyslexicFont ? 'rgba(251, 191, 36, 0.3)' : 'rgba(0, 0, 0, 0.3)',
+                          transition: 'background-color 0.2s ease',
+                        }}
+                      >
+                        <div 
+                          style={{
+                            width: '1.25rem',
+                            height: '1.25rem',
+                            borderRadius: '50%',
+                            margin: '0.125rem',
+                            backgroundColor: '#e7e5e4',
+                            transform: useDyslexicFont ? 'translateX(1.5rem)' : 'translateX(0)',
+                            transition: 'transform 0.2s ease',
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </label>
+
+                  {words.length > 0 && (
+                    <div 
+                      style={{
+                        padding: '1rem',
+                        borderRadius: '0.5rem',
+                        backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+                        <span style={{ color: 'rgba(231, 229, 228, 0.4)' }}>Total</span>
+                        <span style={{ color: 'rgba(231, 229, 228, 0.6)' }}>{words.length} palabras</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+                        <span style={{ color: 'rgba(231, 229, 228, 0.4)' }}>Tiempo estimado</span>
+                        <span style={{ color: 'rgba(231, 229, 228, 0.6)' }}>{formatTime(Math.ceil(words.length / wpm * 60))}</span>
+                      </div>
+                      {currentIndex > 0 && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem' }}>
+                          <span style={{ color: 'rgba(231, 229, 228, 0.4)' }}>Tiempo restante</span>
+                          <span style={{ color: 'rgba(231, 229, 228, 0.6)' }}>{formatTime(timeRemaining)}</span>
+                        </div>
+                      )}
+                      {sessionStats && (
+                        <>
+                          <div 
+                            style={{
+                              borderTop: '1px solid rgba(180, 83, 9, 0.2)',
+                              margin: '0.5rem 0',
+                            }}
+                          />
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem' }}>
+                            <span style={{ color: 'rgba(231, 229, 228, 0.4)' }}>Última sesión</span>
+                            <span style={{ color: 'rgba(231, 229, 228, 0.6)' }}>{sessionStats.averageWpm} ppm promedio</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                  
+                  <div 
+                    style={{
+                      fontSize: '0.75rem',
+                      paddingTop: '1rem',
+                      borderTop: '1px solid rgba(180, 83, 9, 0.2)',
+                      color: 'rgba(231, 229, 228, 0.3)',
+                    }}
+                  >
+                    <p style={{ margin: '0 0 0.25rem 0' }}>
+                      <strong>Espacio:</strong> play/pausa • <strong>R:</strong> reiniciar • <strong>←→:</strong> velocidad • <strong>C:</strong> config
+                    </p>
+                    <p style={{ margin: 0 }} className="md:hidden">
+                      <strong>Tap:</strong> play/pausa • <strong>Swipe H:</strong> velocidad • <strong>Swipe V:</strong> config
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </>
   );
 }
