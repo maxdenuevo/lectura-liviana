@@ -25,6 +25,10 @@ export default function RSVPReader() {
   const [notification, setNotification] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
+  // Estados para la carga de URL
+  const [urlInput, setUrlInput] = useState('');
+  const [isLoadingUrl, setIsLoadingUrl] = useState(false);
+
   // Estados de sesión
   const [sessionStats, setSessionStats] = useState<SessionStats | null>(null);
   const sessionStartTime = useRef<number>(0);
@@ -57,7 +61,7 @@ export default function RSVPReader() {
     return text.trim().split(/\s+/).filter(Boolean);
   }, [text]);
 
-  // Auto-hide mejorado
+  // Auto-hide 
   const startAutoHideTimer = useCallback(() => {
     if (controlsTimeout.current) {
       clearTimeout(controlsTimeout.current);
@@ -284,6 +288,35 @@ export default function RSVPReader() {
     reader.readAsText(file);
   };
   
+  // Función para cargar desde URL
+  const handleUrlLoad = async () => {
+    if (!urlInput.trim()) return;
+      setIsLoadingUrl(true);
+    try {
+      const response = await fetch('/api/fetch-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: urlInput.trim() })
+      });
+          
+      const data = await response.json();
+          
+      if (data.success) {
+        setText(data.content);
+        restart();
+        setShowConfig(false);
+        showNotification(`${data.title} cargado`);
+        setUrlInput('');
+      } else {
+        showNotification(data.error || 'Error al cargar URL');
+      }
+    } catch (error) {
+      showNotification('Error de conexión');
+    } finally {
+      setIsLoadingUrl(false);
+    }
+  };
+  
   // Cálculos para la UI
   const currentWord = words[currentIndex] || '';
   const wordParts = getWordParts(currentWord);
@@ -388,7 +421,7 @@ export default function RSVPReader() {
           )}
         </AnimatePresence>
 
-        {/* Botón flotante de menú - Reposicionado */}
+        {/* Botón flotante de menú */}
         <button
           onClick={() => setShowConfig(true)}
           style={{
@@ -423,7 +456,7 @@ export default function RSVPReader() {
           ≡
         </button>
 
-        {/* Indicador de estado - Reposicionado */}
+        {/* Indicador de estado */}
         {!isPlaying && words.length > 0 && (
           <div 
             style={{
@@ -491,7 +524,7 @@ export default function RSVPReader() {
               </AnimatePresence>
             </div>
             
-            {/* Indicador de progreso - CORREGIDO */}
+            {/* Indicador de progreso */}
             <div 
               style={{
                 width: '100%',
@@ -515,7 +548,7 @@ export default function RSVPReader() {
           </div>
         </div>
 
-        {/* Controles flotantes - CORREGIDOS */}
+        {/* Controles flotantes */}
         <AnimatePresence>
           {showControls && (
             <motion.div
@@ -653,7 +686,7 @@ export default function RSVPReader() {
           )}
         </AnimatePresence>
 
-        {/* Panel de configuración modal - CORREGIDO */}
+        {/* Panel de configuración modal */}
         <AnimatePresence>
           {showConfig && (
             <motion.div
@@ -781,6 +814,52 @@ export default function RSVPReader() {
                       style={{ display: 'none' }}
                       id="file-input"
                     />
+                  </div>
+
+                  {/* SECCIÓN DE URL */}
+                  <div>
+                    <label style={{
+                      fontSize: '0.875rem',
+                      fontWeight: '300',
+                      marginBottom: '0.5rem',
+                      display: 'block',
+                      color: 'rgba(252, 211, 77, 0.6)',
+                    }}>
+                      Cargar desde URL
+                    </label>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <input 
+                        type="url"
+                        value={urlInput}
+                        onChange={(e) => setUrlInput(e.target.value)}
+                        placeholder="https://ejemplo.com/articulo"
+                        style={{
+                          flex: 1,
+                          padding: '0.75rem',
+                          borderRadius: '0.5rem',
+                          border: 'none',
+                          backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                          color: 'rgba(252, 211, 77, 0.8)',
+                          outline: 'none',
+                        }}
+                        onKeyPress={(e) => e.key === 'Enter' && handleUrlLoad()}
+                      />
+                      <button 
+                        onClick={handleUrlLoad}
+                        disabled={isLoadingUrl || !urlInput.trim()}
+                        style={{
+                          padding: '0.75rem 1rem',
+                          borderRadius: '0.5rem',
+                          backgroundColor: isLoadingUrl ? 'rgba(0, 0, 0, 0.2)' : 'rgba(251, 191, 36, 0.2)',
+                          color: isLoadingUrl ? 'rgba(231, 229, 228, 0.4)' : '#fbbf24',
+                          border: 'none',
+                          cursor: isLoadingUrl ? 'not-allowed' : 'pointer',
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        {isLoadingUrl ? '⟳' : '↓'}
+                      </button>
+                    </div>
                   </div>
                   
                   <div>
