@@ -20,12 +20,13 @@ export default function RootLayout({
   return (
     <html lang="es" className="bg-stone-900">
       <head>
-        <style dangerouslySetInnerHTML={{
-          __html: `
-            html { background-color: #1c1917 !important; }
-            body { background-color: #1c1917 !important; color: #e7e5e4 !important; }
-          `
-        }} />
+        <link
+          rel="preload"
+          href="/fonts/OpenDyslexic-Regular.otf"
+          as="font"
+          type="font/otf"
+          crossOrigin="anonymous"
+        />
       </head>
       <body className={`${inter.className} bg-stone-900 text-stone-200 antialiased`}>
         {children}
