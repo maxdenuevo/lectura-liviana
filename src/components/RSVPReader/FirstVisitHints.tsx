@@ -1,5 +1,4 @@
-import { motion, AnimatePresence } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { theme } from '@/lib/theme';
 
 interface FirstVisitHintsProps {
@@ -7,7 +6,7 @@ interface FirstVisitHintsProps {
   onLoadExample?: (url: string) => void;
 }
 
-export default function FirstVisitHints({ onDismiss, onLoadExample }: FirstVisitHintsProps) {
+function FirstVisitHints({ onDismiss, onLoadExample }: FirstVisitHintsProps) {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -25,18 +24,20 @@ export default function FirstVisitHints({ onDismiss, onLoadExample }: FirstVisit
   };
 
   return (
-    <AnimatePresence>
+    <>
       {show && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 20 }}
-          transition={{ delay: 1, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+        <div
+          className="anim-fade-in-up"
           style={{
+            // La animación CSS pisa transform: se centra con márgenes auto
             position: 'fixed',
             bottom: theme.spacing.xl,
-            left: '50%',
-            transform: 'translateX(-50%)',
+            left: 0,
+            right: 0,
+            margin: '0 auto',
+            width: 'fit-content',
+            animationDelay: '1s',
+            animationDuration: '0.4s',
             maxWidth: '24rem',
             padding: theme.spacing.lg,
             borderRadius: theme.borderRadius.lg,
@@ -139,8 +140,10 @@ export default function FirstVisitHints({ onDismiss, onLoadExample }: FirstVisit
               )}
             </div>
           </div>
-        </motion.div>
+        </div>
       )}
-    </AnimatePresence>
+    </>
   );
 }
+
+export default memo(FirstVisitHints);

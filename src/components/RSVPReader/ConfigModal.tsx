@@ -1,5 +1,4 @@
-import { motion, AnimatePresence } from 'framer-motion';
-import React from 'react';
+import React, { memo } from 'react';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { type ReadingFont } from '@/hooks/usePreferences';
@@ -34,7 +33,7 @@ interface ConfigModalProps {
   formatTime: (seconds: number) => string;
 }
 
-export default function ConfigModal({
+function ConfigModal({
   showConfig,
   text,
   wpm,
@@ -71,7 +70,7 @@ export default function ConfigModal({
   };
 
   return (
-    <AnimatePresence mode="wait">
+    <>
       {showConfig && (
         <>
           <style>{`
@@ -81,11 +80,8 @@ export default function ConfigModal({
               opacity: 1;
             }
           `}</style>
-          <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15, ease: "easeOut" }}
+          <div
+          className="anim-fade-in"
           style={{
             position: 'fixed',
             inset: 0,
@@ -97,7 +93,6 @@ export default function ConfigModal({
             backgroundColor: 'var(--overlay)',
             backdropFilter: 'blur(8px)',
             WebkitBackdropFilter: 'blur(8px)',
-            willChange: 'opacity',
           }}
           onClick={(e) => {
             if (e.target === e.currentTarget) {
@@ -105,12 +100,9 @@ export default function ConfigModal({
             }
           }}
         >
-          <motion.div
+          <div
             ref={modalRef}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
+            className="anim-fade-in-up"
             role="dialog"
             aria-modal="true"
             aria-labelledby="config-modal-title"
@@ -122,7 +114,6 @@ export default function ConfigModal({
               maxHeight: '90vh',
               overflowY: 'auto',
               backgroundColor: 'var(--surface-modal)',
-              willChange: 'transform, opacity',
               boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
             }}
             onClick={e => e.stopPropagation()}
@@ -581,10 +572,12 @@ export default function ConfigModal({
                 </p>
               </div>
             </div>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
         </>
       )}
-    </AnimatePresence>
+    </>
   );
 }
+
+export default memo(ConfigModal);

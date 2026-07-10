@@ -22,6 +22,30 @@ import { type EpubBook } from '@/lib/epubParser';
 const CONTROLS_HIDE_DELAY = 3000;
 const DEFAULT_TEXT = "Bienvenido a tu espacio de lectura rápida. Un lugar cálido y minimalista donde las palabras fluyen con naturalidad. Presiona espacio o toca la pantalla para comenzar.";
 
+// Calculate word parts (ORP - Optimal Recognition Point)
+const getWordParts = (word: string): WordParts => {
+  if (!word) return { pre: '', focal: '', post: '' };
+  const len = word.length;
+  let pivot = 1;
+  if (len === 1) pivot = 0;
+  else if (len >= 2 && len <= 5) pivot = 1;
+  else if (len >= 6 && len <= 9) pivot = 2;
+  else if (len >= 10 && len <= 13) pivot = 3;
+  else pivot = 4;
+
+  return {
+    pre: word.slice(0, pivot),
+    focal: word.slice(pivot, pivot + 1),
+    post: word.slice(pivot + 1)
+  };
+};
+
+const formatTime = (seconds: number) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
 export default function RSVPReader() {
   // Preferences (localStorage)
   const { wpm, setWpm, readingFont, setReadingFont, skipWords, setSkipWords, text, setText } = usePreferences(DEFAULT_TEXT);
@@ -224,31 +248,31 @@ export default function RSVPReader() {
     };
   }, [isPlaying, showControlsTemporarily]);
 
-  // Calculate word parts (ORP - Optimal Recognition Point)
-  const getWordParts = (word: string): WordParts => {
-    if (!word) return { pre: '', focal: '', post: '' };
-    const len = word.length;
-    let pivot = 1;
-    if (len === 1) pivot = 0;
-    else if (len >= 2 && len <= 5) pivot = 1;
-    else if (len >= 6 && len <= 9) pivot = 2;
-    else if (len >= 10 && len <= 13) pivot = 3;
-    else pivot = 4;
-
-    return {
-      pre: word.slice(0, pivot),
-      focal: word.slice(pivot, pivot + 1),
-      post: word.slice(pivot + 1)
-    };
-  };
-
   const wordParts = getWordParts(currentWord);
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+  // Callbacks estables para que los hijos memoizados no se re-rendericen por tick
+  const closeConfig = useCallback(() => setShowConfig(false), []);
+  const closeHelp = useCallback(() => setShowHelp(false), []);
+  const openHelp = useCallback(() => setShowHelp(true), []);
+  const openConfig = useCallback(() => setShowConfig(true), []);
+
+  const handleLoadExample = useCallback((url: string) => {
+    setUrlInput(url);
+    // Wait for state to update, then load
+    setTimeout(() => loadFromUrl(), 0);
+  }, [setUrlInput, loadFromUrl]);
+
+  const handleControlsMouseEnter = useCallback(() => {
+    isHoveringControls.current = true;
+    if (controlsTimeout.current) {
+      clearTimeout(controlsTimeout.current);
+    }
+  }, []);
+
+  const handleControlsMouseLeave = useCallback(() => {
+    isHoveringControls.current = false;
+    startAutoHideTimer();
+  }, [startAutoHideTimer]);
 
   return (
     <>
@@ -269,26 +293,20 @@ export default function RSVPReader() {
         <NotificationToast message={notification} />
 
         {/* First visit hints */}
-        <FirstVisitHints
-          onLoadExample={(url) => {
-            setUrlInput(url);
-            // Wait for state to update, then load
-            setTimeout(() => loadFromUrl(), 0);
-          }}
-        />
+        <FirstVisitHints onLoadExample={handleLoadExample} />
 
         {/* Gesture feedback */}
         <GestureFeedback type={gestureFeedback.type} newWpm={gestureFeedback.wpm} />
 
         {/* Shortcuts help */}
-        <ShortcutsHelp showHelp={showHelp} onClose={() => setShowHelp(false)} />
+        <ShortcutsHelp showHelp={showHelp} onClose={closeHelp} />
 
         {/* Screen reader announcements */}
         <ScreenReaderAnnouncer message={srAnnouncement} />
 
         {/* Botón flotante de ayuda */}
         <button
-          onClick={() => setShowHelp(true)}
+          onClick={openHelp}
           style={{
             position: 'fixed',
             top: theme.spacing.lg,
@@ -323,7 +341,7 @@ export default function RSVPReader() {
 
         {/* Botón flotante de menú */}
         <button
-          onClick={() => setShowConfig(true)}
+          onClick={openConfig}
           style={{
             position: 'fixed',
             top: theme.spacing.lg,
@@ -391,16 +409,8 @@ export default function RSVPReader() {
           onRestart={restart}
           onSkipBackward={skipBackward}
           onSkipForward={skipForward}
-          onMouseEnter={() => {
-            isHoveringControls.current = true;
-            if (controlsTimeout.current) {
-              clearTimeout(controlsTimeout.current);
-            }
-          }}
-          onMouseLeave={() => {
-            isHoveringControls.current = false;
-            startAutoHideTimer();
-          }}
+          onMouseEnter={handleControlsMouseEnter}
+          onMouseLeave={handleControlsMouseLeave}
         />
 
         {/* Panel de configuración modal */}
@@ -416,9 +426,10 @@ export default function RSVPReader() {
           epubStatus={epubStatus}
           epubData={epubData}
           words={words}
-          currentIndex={currentIndex}
-          timeRemaining={timeRemaining}
-          onClose={() => setShowConfig(false)}
+          // Gateados con el modal cerrado: sin esto, cada palabra re-renderizaría el modal entero
+          currentIndex={showConfig ? currentIndex : 0}
+          timeRemaining={showConfig ? timeRemaining : 0}
+          onClose={closeConfig}
           onTextChange={setText}
           onWpmChange={setWpm}
           onSkipWordsChange={setSkipWords}

@@ -1,7 +1,5 @@
-import { motion, AnimatePresence } from 'framer-motion';
+import { memo, useEffect, useRef } from 'react';
 import { WordParts, WordType } from './types';
-import { useReducedMotion } from '@/hooks/useReducedMotion';
-import { useEffect, useRef } from 'react';
 import { getVisualStyle } from '@/lib/textParser';
 
 interface WordDisplayProps {
@@ -11,8 +9,9 @@ interface WordDisplayProps {
   progress: number;
 }
 
-export default function WordDisplay({ currentIndex, wordParts, wordType, progress }: WordDisplayProps) {
-  const prefersReducedMotion = useReducedMotion();
+// Hot path: se re-renderiza en cada palabra. Sin framer-motion — el remount
+// del div con key + @keyframes CSS anima la entrada a costo casi nulo.
+function WordDisplay({ currentIndex, wordParts, wordType, progress }: WordDisplayProps) {
   const prevProgress = useRef(progress);
 
   // Detect restart (progress goes from high to low)
@@ -49,36 +48,28 @@ export default function WordDisplay({ currentIndex, wordParts, wordType, progres
             width: '100%',
           }}
         >
-          <AnimatePresence mode="popLayout">
-            <motion.div
-              key={currentIndex}
-              initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, scale: 0.95 }}
-              transition={{
-                duration: prefersReducedMotion ? 0 : Math.min(0.12 * visualStyle.durationMultiplier, 0.3),
-                ease: [0.16, 1, 0.3, 1]
-              }}
+          <div
+            key={currentIndex}
+            className="word-in"
+            style={{
+              textAlign: 'center',
+              userSelect: 'none',
+            }}
+          >
+            <span
               style={{
-                textAlign: 'center',
-                userSelect: 'none',
+                fontSize: `calc(clamp(3rem, 8vw, 6rem) * ${visualStyle.sizeMultiplier})`,
+                fontWeight: wordType.startsWith('h') ? '700' : '400',
+                letterSpacing: '0.05em',
+                filter: `brightness(${visualStyle.brightnessMultiplier})`,
+                textShadow: '0 0 32px rgba(244, 162, 97, 0.22)',
               }}
             >
-              <span
-                style={{
-                  fontSize: `calc(clamp(3rem, 8vw, 6rem) * ${visualStyle.sizeMultiplier})`,
-                  fontWeight: wordType.startsWith('h') ? '700' : '400',
-                  letterSpacing: '0.05em',
-                  filter: `brightness(${visualStyle.brightnessMultiplier})`,
-                  textShadow: '0 0 32px rgba(244, 162, 97, 0.22)',
-                }}
-              >
-                <span style={{ color: 'var(--word-prepost)' }}>{wordParts.pre}</span>
-                <span style={{ color: 'var(--word-focal)', fontWeight: '700' }}>{wordParts.focal}</span>
-                <span style={{ color: 'var(--word-prepost)' }}>{wordParts.post}</span>
-              </span>
-            </motion.div>
-          </AnimatePresence>
+              <span style={{ color: 'var(--word-prepost)' }}>{wordParts.pre}</span>
+              <span style={{ color: 'var(--word-focal)', fontWeight: '700' }}>{wordParts.focal}</span>
+              <span style={{ color: 'var(--word-prepost)' }}>{wordParts.post}</span>
+            </span>
+          </div>
         </div>
 
         {/* Indicador de progreso */}
@@ -92,18 +83,13 @@ export default function WordDisplay({ currentIndex, wordParts, wordType, progres
             borderRadius: '1px',
           }}
         >
-          <motion.div
-            key={isRestarting ? 'restart' : 'progress'}
+          <div
             style={{
               height: '100%',
+              width: `${progress}%`,
               backgroundColor: 'var(--accent-muted)',
               borderRadius: '1px',
-            }}
-            initial={isRestarting ? { width: '0%' } : false}
-            animate={{ width: `${progress}%` }}
-            transition={{
-              duration: prefersReducedMotion ? 0 : (isRestarting ? 0.5 : 0.2),
-              ease: [0.16, 1, 0.3, 1]
+              transition: isRestarting ? 'none' : 'width 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
             }}
           />
         </div>
@@ -111,3 +97,5 @@ export default function WordDisplay({ currentIndex, wordParts, wordType, progres
     </div>
   );
 }
+
+export default memo(WordDisplay);

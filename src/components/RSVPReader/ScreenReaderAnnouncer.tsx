@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { memo, useEffect, useRef } from 'react';
 
 interface ScreenReaderAnnouncerProps {
   message: string;
@@ -9,7 +9,7 @@ interface ScreenReaderAnnouncerProps {
  * Component to announce messages to screen readers
  * Uses aria-live regions for accessibility
  */
-export default function ScreenReaderAnnouncer({ message, priority = 'polite' }: ScreenReaderAnnouncerProps) {
+function ScreenReaderAnnouncer({ message, priority = 'polite' }: ScreenReaderAnnouncerProps) {
   const announceRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -40,3 +40,5 @@ export default function ScreenReaderAnnouncer({ message, priority = 'polite' }: 
     />
   );
 }
+
+export default memo(ScreenReaderAnnouncer);

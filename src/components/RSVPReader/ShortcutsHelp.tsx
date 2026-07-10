@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'framer-motion';
+import { memo } from 'react';
 import { theme } from '@/lib/theme';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
@@ -27,19 +27,16 @@ const shortcuts: Shortcut[] = [
   { keys: ['Swipe ↑', 'Swipe ↓'], description: 'Ajustar velocidad', category: 'mobile' },
 ];
 
-export default function ShortcutsHelp({ showHelp, onClose }: ShortcutsHelpProps) {
+function ShortcutsHelp({ showHelp, onClose }: ShortcutsHelpProps) {
   const desktopShortcuts = shortcuts.filter(s => s.category === 'desktop');
   const mobileShortcuts = shortcuts.filter(s => s.category === 'mobile');
   useBodyScrollLock(showHelp);
 
   return (
-    <AnimatePresence mode="wait">
+    <>
       {showHelp && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15, ease: "easeOut" }}
+        <div
+          className="anim-fade-in"
           style={{
             position: 'fixed',
             inset: 0,
@@ -51,7 +48,6 @@ export default function ShortcutsHelp({ showHelp, onClose }: ShortcutsHelpProps)
             backgroundColor: 'var(--overlay)',
             backdropFilter: 'blur(8px)',
             WebkitBackdropFilter: 'blur(8px)',
-            willChange: 'opacity',
           }}
           onClick={(e) => {
             if (e.target === e.currentTarget) {
@@ -59,11 +55,8 @@ export default function ShortcutsHelp({ showHelp, onClose }: ShortcutsHelpProps)
             }
           }}
         >
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
+          <div
+            className="anim-fade-in-up"
             style={{
               borderRadius: theme.borderRadius.lg,
               padding: theme.spacing.xl,
@@ -72,7 +65,6 @@ export default function ShortcutsHelp({ showHelp, onClose }: ShortcutsHelpProps)
               maxHeight: '90vh',
               overflowY: 'auto',
               backgroundColor: theme.colors.surfaceModal,
-              willChange: 'transform, opacity',
               boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
             }}
             onClick={e => e.stopPropagation()}
@@ -291,9 +283,11 @@ export default function ShortcutsHelp({ showHelp, onClose }: ShortcutsHelpProps)
                 </p>
               </div>
             </div>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       )}
-    </AnimatePresence>
+    </>
   );
 }
+
+export default memo(ShortcutsHelp);

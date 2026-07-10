@@ -1,8 +1,7 @@
-import JSZip from 'jszip';
-
 /**
  * Parser for EPUB files
  * Extracts text content from EPUB ebooks (ignoring images and styles)
+ * jszip se importa dinámicamente: solo entra al bundle cuando se carga un .epub
  */
 
 export interface EpubMetadata {
@@ -188,6 +187,8 @@ export async function extractEpubText(
   try {
     onProgress?.(0, 'Leyendo archivo EPUB...');
 
+    const { default: JSZip } = await import('jszip');
+
     // Read file as ArrayBuffer
     const arrayBuffer = await file.arrayBuffer();
     onProgress?.(10, 'Descomprimiendo EPUB...');
@@ -255,6 +256,11 @@ export async function extractEpubText(
         // Update progress
         const progress = 40 + Math.floor((i / chapterInfos.length) * 50);
         onProgress?.(progress, `Procesando capítulo ${i + 1}/${chapterInfos.length}...`);
+      }
+
+      // Ceder al event loop cada pocos capítulos para no congelar la UI en libros grandes
+      if (i % 5 === 4) {
+        await new Promise(resolve => setTimeout(resolve, 0));
       }
     }
 

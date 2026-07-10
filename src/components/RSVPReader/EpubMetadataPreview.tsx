@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { type EpubBook } from '@/lib/epubParser';
 import { theme } from '@/lib/theme';
 
@@ -6,7 +6,7 @@ interface EpubMetadataPreviewProps {
   epubData: EpubBook;
 }
 
-export default function EpubMetadataPreview({ epubData }: EpubMetadataPreviewProps) {
+function EpubMetadataPreview({ epubData }: EpubMetadataPreviewProps) {
   const { metadata, chapters } = epubData;
 
   return (
@@ -98,3 +98,5 @@ export default function EpubMetadataPreview({ epubData }: EpubMetadataPreviewPro
     </div>
   );
 }
+
+export default memo(EpubMetadataPreview);

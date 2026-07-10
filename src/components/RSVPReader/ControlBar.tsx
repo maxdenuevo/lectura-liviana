@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'framer-motion';
+import { memo } from 'react';
 
 interface ControlBarProps {
   showControls: boolean;
@@ -13,7 +13,7 @@ interface ControlBarProps {
   onMouseLeave: () => void;
 }
 
-export default function ControlBar({
+function ControlBar({
   showControls,
   wpm,
   isPlaying,
@@ -26,14 +26,11 @@ export default function ControlBar({
   onMouseLeave,
 }: ControlBarProps) {
   return (
-    <AnimatePresence>
+    <>
       {showControls && (
-        <motion.div
+        <div
           key="controls"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+          className="anim-fade-in-up"
           style={{
             position: 'fixed',
             bottom: '2rem',
@@ -197,8 +194,10 @@ export default function ControlBar({
               →
             </button>
           </div>
-        </motion.div>
+        </div>
       )}
-    </AnimatePresence>
+    </>
   );
 }
+
+export default memo(ControlBar);

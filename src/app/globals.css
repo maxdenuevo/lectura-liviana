@@ -174,3 +174,37 @@ button {
 .loading-spin {
   animation: spin 1s linear infinite;
 }
+
+/* --- Animaciones de entrada (reemplazo CSS de framer-motion) --- */
+/* prefers-reduced-motion las anula vía la media query global de arriba */
+@keyframes fade-in {
+  from { opacity: 0; }
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(20px); }
+}
+
+@keyframes fade-in-down {
+  from { opacity: 0; transform: translateY(-20px) scale(0.9); }
+}
+
+@keyframes word-in {
+  from { opacity: 0; transform: scale(0.97); }
+}
+
+.anim-fade-in {
+  animation: fade-in 0.15s ease-out backwards;
+}
+
+.anim-fade-in-up {
+  animation: fade-in-up 0.2s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.anim-fade-in-down {
+  animation: fade-in-down 0.2s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.word-in {
+  animation: word-in 0.1s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}

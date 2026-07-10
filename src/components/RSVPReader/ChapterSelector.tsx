@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { type EpubChapter } from '@/lib/epubParser';
 import { theme } from '@/lib/theme';
 
@@ -6,7 +7,7 @@ interface ChapterSelectorProps {
   onChapterSelect: (chapter: EpubChapter) => void;
 }
 
-export default function ChapterSelector({ chapters, onChapterSelect }: ChapterSelectorProps) {
+function ChapterSelector({ chapters, onChapterSelect }: ChapterSelectorProps) {
   const handleChapterClick = (chapter: EpubChapter) => {
     onChapterSelect(chapter);
   };
@@ -123,3 +124,5 @@ export default function ChapterSelector({ chapters, onChapterSelect }: ChapterSe
     </div>
   );
 }
+
+export default memo(ChapterSelector);
