@@ -1,10 +1,12 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { EnrichedWord, WordType } from '@/components/RSVPReader/types';
 import { getPauseMultiplier } from '@/lib/textParser';
 
 interface RSVPEngineConfig {
   words: EnrichedWord[];
   wpm: number;
+  /** Posición donde retomar cuando cambia el texto (reanudar libro) */
+  initialIndex?: number;
   onComplete: () => void;
 }
 
@@ -32,9 +34,19 @@ interface RSVPEngineResult {
  * - Progress tracking
  * - Play/pause state
  */
-export function useRSVPEngine({ words, wpm, onComplete }: RSVPEngineConfig): RSVPEngineResult {
+export function useRSVPEngine({ words, wpm, initialIndex = 0, onComplete }: RSVPEngineConfig): RSVPEngineResult {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+
+  // Al cambiar el texto, arrancar desde initialIndex (reanudación) sin
+  // reaccionar a cambios posteriores de initialIndex solo
+  const initialIndexRef = useRef(initialIndex);
+  initialIndexRef.current = initialIndex;
+
+  useEffect(() => {
+    setIsPlaying(false);
+    setCurrentIndex(words.length > 0 ? Math.min(initialIndexRef.current, words.length - 1) : 0);
+  }, [words]);
 
   // Timer principal de lectura
   useEffect(() => {

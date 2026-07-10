@@ -23,13 +23,15 @@ interface ConfigModalProps {
   timeRemaining: number;
   onClose: () => void;
   onTextChange: (text: string) => void;
+  /** Presente solo cuando el texto pegado aún no está en la biblioteca */
+  onSaveToLibrary?: () => void;
   onWpmChange: (wpm: number) => void;
   onSkipWordsChange: (count: number) => void;
   onReadingFontChange: (font: ReadingFont) => void;
   onUrlInputChange: (url: string) => void;
   onUrlLoad: () => void;
   onFileLoad: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onChapterSelect?: (chapterContent: string, chapterTitle: string) => void;
+  onChapterSelect?: (chapterIndex: number, chapterTitle: string) => void;
   formatTime: (seconds: number) => string;
 }
 
@@ -49,6 +51,7 @@ function ConfigModal({
   timeRemaining,
   onClose,
   onTextChange,
+  onSaveToLibrary,
   onWpmChange,
   onSkipWordsChange,
   onReadingFontChange,
@@ -179,6 +182,26 @@ function ConfigModal({
                   }}
                   placeholder="Pega tu texto aquí..."
                 />
+                {onSaveToLibrary && text.trim() && (
+                  <button
+                    onClick={onSaveToLibrary}
+                    style={{
+                      marginTop: '0.5rem',
+                      padding: '0.5rem 1rem',
+                      borderRadius: '0.5rem',
+                      backgroundColor: 'var(--accent-subtle)',
+                      color: 'var(--accent)',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '0.8rem',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-dim)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-subtle)'}
+                  >
+                    Guardar en biblioteca
+                  </button>
+                )}
               </div>
 
               <div>
@@ -497,7 +520,7 @@ function ConfigModal({
                     <ChapterSelector
                       chapters={epubData.chapters}
                       onChapterSelect={(chapter) => {
-                        onChapterSelect(chapter.content, chapter.title);
+                        onChapterSelect(chapter.index, chapter.title);
                       }}
                     />
                   )}

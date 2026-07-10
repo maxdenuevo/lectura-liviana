@@ -9,15 +9,19 @@ import ShortcutsHelp from './ShortcutsHelp';
 import FirstVisitHints from './FirstVisitHints';
 import GestureFeedback from './GestureFeedback';
 import ScreenReaderAnnouncer from './ScreenReaderAnnouncer';
+import LibraryView from '@/components/Library/LibraryView';
 import { WordParts, EnrichedWord } from './types';
 import { usePreferences } from '@/hooks/usePreferences';
 import { useRSVPEngine } from '@/hooks/useRSVPEngine';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useTouchGestures } from '@/hooks/useTouchGestures';
 import { useTextLoader } from '@/hooks/useTextLoader';
+import { useLibrary } from '@/hooks/useLibrary';
+import { useReadingProgress } from '@/hooks/useReadingProgress';
 import { theme } from '@/lib/theme';
 import { parseText, parseSimpleText } from '@/lib/textParser';
 import { type EpubBook } from '@/lib/epubParser';
+import { type StoredBook } from '@/lib/db';
 
 const CONTROLS_HIDE_DELAY = 3000;
 const DEFAULT_TEXT = "Bienvenido a tu espacio de lectura rápida. Un lugar cálido y minimalista donde las palabras fluyen con naturalidad. Presiona espacio o toca la pantalla para comenzar.";
@@ -48,12 +52,17 @@ const formatTime = (seconds: number) => {
 
 export default function RSVPReader() {
   // Preferences (localStorage)
-  const { wpm, setWpm, readingFont, setReadingFont, skipWords, setSkipWords, text, setText } = usePreferences(DEFAULT_TEXT);
+  const { wpm, setWpm, readingFont, setReadingFont, skipWords, setSkipWords } = usePreferences();
   const useDyslexicFont = readingFont === 'opendyslexic';
+
+  // Texto activo (viene de la biblioteca o del textarea) y posición de reanudación
+  const [text, setText] = useState('');
+  const [initialIndex, setInitialIndex] = useState(0);
 
   // UI state
   const [showControls, setShowControls] = useState(true);
   const [showConfig, setShowConfig] = useState(false);
+  const [showLibrary, setShowLibrary] = useState(false);
   const [notification, setNotification] = useState('');
   const [showHelp, setShowHelp] = useState(false);
   const [gestureFeedback, setGestureFeedback] = useState<{ type: 'speed-up' | 'speed-down' | null; wpm?: number }>({ type: null });
@@ -89,6 +98,37 @@ export default function RSVPReader() {
     setTimeout(() => setNotification(''), 2000);
   }, []);
 
+  // Biblioteca (IndexedDB): abre el último libro al montar y reanuda su posición
+  const handleBookOpened = useCallback((book: StoredBook, savedIndex: number) => {
+    setInitialIndex(savedIndex);
+    setText(book.fullText);
+    setEpubData(
+      book.metadata && book.chapters && book.chapters.length > 0
+        ? { metadata: book.metadata, chapters: book.chapters, fullText: book.fullText }
+        : null
+    );
+    setShowConfig(false);
+    setShowLibrary(false);
+    showNotification(savedIndex > 0 ? `${book.title} — reanudando` : book.title);
+  }, [showNotification]);
+
+  const {
+    books,
+    activeBookId,
+    isLibraryLoaded,
+    openBook,
+    addBookToLibrary,
+    removeBook,
+    detachActiveBook,
+  } = useLibrary({ onBookOpened: handleBookOpened, onError: showNotification });
+
+  // Texto de bienvenida solo si la biblioteca cargó vacía
+  useEffect(() => {
+    if (isLibraryLoaded && !activeBookId && !text) {
+      setText(DEFAULT_TEXT);
+    }
+  }, [isLibraryLoaded, activeBookId, text]);
+
   // RSVP Engine
   const {
     currentIndex,
@@ -97,6 +137,8 @@ export default function RSVPReader() {
     timeRemaining,
     currentWord,
     currentWordType,
+    setIsPlaying,
+    setCurrentIndex,
     togglePlay: engineTogglePlay,
     restart: engineRestart,
     skipForward: engineSkipForward,
@@ -104,8 +146,12 @@ export default function RSVPReader() {
   } = useRSVPEngine({
     words,
     wpm,
+    initialIndex,
     onComplete: () => showNotification('Lectura completada'),
   });
+
+  // Persistir la posición del libro activo (throttled + flush al pausar/salir)
+  useReadingProgress(activeBookId, currentIndex, isPlaying);
 
   // Auto-hide controls logic
   const startAutoHideTimer = useCallback(() => {
@@ -170,25 +216,62 @@ export default function RSVPReader() {
     setSrAnnouncement(`Retrocedido ${skipWords} ${skipWords === 1 ? 'palabra' : 'palabras'}`);
   }, [engineSkipBackward, skipWords, showControlsTemporarily]);
 
-  const handleChapterSelect = useCallback((chapterContent: string, chapterTitle: string) => {
-    setText(chapterContent);
-    restart();
-    setShowConfig(false);
-    showNotification(`Capítulo cargado: ${chapterTitle}`);
-    setSrAnnouncement(`Cambiando a: ${chapterTitle}`);
-  }, [setText, restart, showNotification]);
+  // Offsets de palabra por capítulo: navegar capítulos mueve el índice sobre el
+  // texto completo, así la posición guardada y los capítulos comparten un solo índice
+  const chapterOffsets = useMemo(() => {
+    if (!epubData) return [];
+    const offsets: number[] = [];
+    let acc = 0;
+    for (const chapter of epubData.chapters) {
+      offsets.push(acc);
+      const trimmed = chapter.content.trim();
+      acc += trimmed ? trimmed.split(/\s+/).length : 0;
+    }
+    return offsets;
+  }, [epubData]);
 
-  // Text loader
+  const handleChapterSelect = useCallback((chapterIndex: number, chapterTitle: string) => {
+    setIsPlaying(false);
+    setCurrentIndex(Math.min(chapterOffsets[chapterIndex] ?? 0, Math.max(words.length - 1, 0)));
+    setShowConfig(false);
+    showNotification(`Capítulo: ${chapterTitle}`);
+    setSrAnnouncement(`Cambiando a: ${chapterTitle}`);
+  }, [chapterOffsets, words.length, setIsPlaying, setCurrentIndex, showNotification]);
+
+  // Text loader: todo lo cargado entra a la biblioteca y se abre desde ahí
   const { urlInput, isLoadingUrl, epubProgress, epubStatus, setUrlInput, loadFromUrl, loadFromFile } = useTextLoader({
-    onTextLoaded: (loadedText, title, loadedEpubData) => {
-      setText(loadedText);
-      setEpubData(loadedEpubData || null);
-      restart();
-      setShowConfig(false);
-      showNotification(title ? `${title} cargado` : 'Texto cargado');
+    onTextLoaded: (loadedText, source, title, loadedEpubData) => {
+      addBookToLibrary({
+        title: title || 'Sin título',
+        author: loadedEpubData?.metadata.author,
+        source,
+        fullText: loadedText,
+        metadata: loadedEpubData?.metadata,
+        chapters: loadedEpubData?.chapters,
+      });
     },
     onError: showNotification,
   });
+
+  // El textarea edita texto efímero: se despega del libro activo
+  const handleTextChange = useCallback((newText: string) => {
+    setText(newText);
+    setInitialIndex(0);
+    setEpubData(null);
+    detachActiveBook();
+  }, [detachActiveBook]);
+
+  // Guardar el texto pegado como libro
+  const handleSaveToLibrary = useCallback(() => {
+    if (!text.trim()) return;
+    const firstWords = text.trim().split(/\s+/).slice(0, 6).join(' ');
+    addBookToLibrary({
+      title: firstWords.length > 40 ? `${firstWords.slice(0, 40)}…` : firstWords,
+      source: 'paste',
+      fullText: text,
+    });
+    showNotification('Guardado en la biblioteca');
+  }, [text, addBookToLibrary, showNotification]);
 
   // Keyboard shortcuts
   useKeyboardShortcuts({
@@ -202,9 +285,10 @@ export default function RSVPReader() {
     onCloseConfig: () => {
       setShowConfig(false);
       setShowHelp(false);
+      setShowLibrary(false);
     },
     onShowHelp: () => setShowHelp(prev => !prev),
-    isModalOpen: showConfig || showHelp,
+    isModalOpen: showConfig || showHelp || showLibrary,
   });
 
   // Touch gestures
@@ -255,6 +339,8 @@ export default function RSVPReader() {
   const closeHelp = useCallback(() => setShowHelp(false), []);
   const openHelp = useCallback(() => setShowHelp(true), []);
   const openConfig = useCallback(() => setShowConfig(true), []);
+  const openLibrary = useCallback(() => setShowLibrary(true), []);
+  const closeLibrary = useCallback(() => setShowLibrary(false), []);
 
   const handleLoadExample = useCallback((url: string) => {
     setUrlInput(url);
@@ -300,6 +386,16 @@ export default function RSVPReader() {
 
         {/* Shortcuts help */}
         <ShortcutsHelp showHelp={showHelp} onClose={closeHelp} />
+
+        {/* Biblioteca */}
+        <LibraryView
+          showLibrary={showLibrary}
+          books={books}
+          activeBookId={activeBookId}
+          onClose={closeLibrary}
+          onOpenBook={openBook}
+          onDeleteBook={removeBook}
+        />
 
         {/* Screen reader announcements */}
         <ScreenReaderAnnouncer message={srAnnouncement} />
@@ -374,6 +470,53 @@ export default function RSVPReader() {
           ≡
         </button>
 
+        {/* Botón flotante de biblioteca */}
+        <button
+          onClick={openLibrary}
+          style={{
+            position: 'fixed',
+            top: 'calc(1.5rem + 3rem + 0.5rem)',
+            right: theme.spacing.lg,
+            width: theme.spacing.xxl,
+            height: theme.spacing.xxl,
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: theme.zIndex.modal,
+            backgroundColor: theme.colors.surfaceFloat,
+            backdropFilter: 'blur(12px)',
+            color: theme.colors.textMuted,
+            border: 'none',
+            cursor: 'pointer',
+            transition: `all ${theme.transitions.normal} ease`,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = theme.colors.text;
+            e.currentTarget.style.backgroundColor = theme.colors.surfaceFloatHover;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = theme.colors.textMuted;
+            e.currentTarget.style.backgroundColor = theme.colors.surfaceFloat;
+          }}
+          aria-label="Biblioteca"
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+          </svg>
+        </button>
+
         {/* Indicador de estado (moved to avoid overlap with help button) */}
         {!isPlaying && words.length > 0 && (
           <div
@@ -430,7 +573,8 @@ export default function RSVPReader() {
           currentIndex={showConfig ? currentIndex : 0}
           timeRemaining={showConfig ? timeRemaining : 0}
           onClose={closeConfig}
-          onTextChange={setText}
+          onTextChange={handleTextChange}
+          onSaveToLibrary={activeBookId ? undefined : handleSaveToLibrary}
           onWpmChange={setWpm}
           onSkipWordsChange={setSkipWords}
           onReadingFontChange={setReadingFont}

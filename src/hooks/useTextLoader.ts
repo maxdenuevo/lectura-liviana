@@ -11,8 +11,10 @@ interface TextLoaderResult {
   loadFromFile: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
+export type LoadedSource = 'url' | 'file' | 'epub';
+
 interface UseTextLoaderConfig {
-  onTextLoaded: (text: string, title?: string, epubData?: EpubBook) => void;
+  onTextLoaded: (text: string, source: LoadedSource, title?: string, epubData?: EpubBook) => void;
   onError: (message: string) => void;
 }
 
@@ -41,7 +43,7 @@ export function useTextLoader({ onTextLoaded, onError }: UseTextLoaderConfig): T
       const data = await response.json();
 
       if (data.success) {
-        onTextLoaded(data.content, data.title);
+        onTextLoaded(data.content, 'url', data.title);
         setUrlInput(''); // Clear input on success
       } else {
         // Show error with hint if available
@@ -73,7 +75,7 @@ export function useTextLoader({ onTextLoaded, onError }: UseTextLoaderConfig): T
         });
 
         // Load the full text along with EPUB metadata
-        onTextLoaded(epubBook.fullText, epubBook.metadata.title, epubBook);
+        onTextLoaded(epubBook.fullText, 'epub', epubBook.metadata.title, epubBook);
 
         // Reset progress after completion
         setTimeout(() => {
@@ -86,7 +88,7 @@ export function useTextLoader({ onTextLoaded, onError }: UseTextLoaderConfig): T
         reader.onload = (event) => {
           const content = event.target?.result as string;
           if (content) {
-            onTextLoaded(content, file.name);
+            onTextLoaded(content, 'file', file.name);
           }
         };
         reader.onerror = () => {
