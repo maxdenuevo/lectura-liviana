@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { theme } from '@/lib/theme';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 interface ShortcutsHelpProps {
   showHelp: boolean;
@@ -16,20 +17,22 @@ interface Shortcut {
 const shortcuts: Shortcut[] = [
   { keys: ['Espacio'], description: 'Iniciar/Pausar lectura', category: 'desktop' },
   { keys: ['R'], description: 'Reiniciar desde el principio', category: 'desktop' },
-  { keys: ['←', '→'], description: 'Retroceder/Adelantar palabras', category: 'desktop' },
+  { keys: ['←', '→'], description: 'Retroceso/Avance fino', category: 'desktop' },
+  { keys: ['Shift+←', 'Shift+→'], description: 'Salto grande', category: 'desktop' },
   { keys: ['↑', '↓'], description: 'Ajustar velocidad (±25 ppm)', category: 'desktop' },
   { keys: ['C'], description: 'Abrir/Cerrar configuración', category: 'desktop' },
   { keys: ['Esc'], description: 'Pausar lectura / Cerrar menús', category: 'desktop' },
   { keys: ['?'], description: 'Mostrar esta ayuda', category: 'desktop' },
   { keys: ['Tap'], description: 'Iniciar/Pausar lectura', category: 'mobile' },
   { keys: ['Doble tap'], description: 'Abrir configuración', category: 'mobile' },
-  { keys: ['Swipe →', 'Swipe ←'], description: 'Adelantar/Retroceder palabras', category: 'mobile' },
+  { keys: ['Swipe →', 'Swipe ←'], description: 'Salto grande adelante/atrás', category: 'mobile' },
   { keys: ['Swipe ↑', 'Swipe ↓'], description: 'Ajustar velocidad', category: 'mobile' },
 ];
 
 function ShortcutsHelp({ showHelp, onClose }: ShortcutsHelpProps) {
   const desktopShortcuts = shortcuts.filter(s => s.category === 'desktop');
   const mobileShortcuts = shortcuts.filter(s => s.category === 'mobile');
+  const modalRef = useFocusTrap<HTMLDivElement>(showHelp);
   useBodyScrollLock(showHelp);
 
   return (
@@ -56,7 +59,11 @@ function ShortcutsHelp({ showHelp, onClose }: ShortcutsHelpProps) {
           }}
         >
           <div
+            ref={modalRef}
             className="anim-fade-in-up"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="shortcuts-help-title"
             style={{
               borderRadius: theme.borderRadius.lg,
               padding: theme.spacing.xl,
@@ -73,6 +80,7 @@ function ShortcutsHelp({ showHelp, onClose }: ShortcutsHelpProps) {
               {/* Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h2
+                  id="shortcuts-help-title"
                   style={{
                     fontSize: '1.5rem',
                     fontWeight: theme.fonts.weights.light,
@@ -86,6 +94,11 @@ function ShortcutsHelp({ showHelp, onClose }: ShortcutsHelpProps) {
                   onClick={onClose}
                   style={{
                     fontSize: '2rem',
+                    minWidth: '2.75rem',
+                    minHeight: '2.75rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                     color: theme.colors.textMuted,
                     backgroundColor: 'transparent',
                     border: 'none',

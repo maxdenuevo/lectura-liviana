@@ -48,8 +48,8 @@ function ControlBar({
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '1.5rem',
-              padding: '1rem 1.5rem',
+              gap: '0.25rem',
+              padding: '0.5rem 1rem',
               borderRadius: '9999px',
               border: '1px solid var(--border)',
               backgroundColor: 'var(--surface-controls)',
@@ -62,6 +62,11 @@ function ControlBar({
               onClick={() => onAdjustSpeed(-25)}
               style={{
                 fontSize: '1.25rem',
+                minWidth: '2.75rem',
+                minHeight: '2.75rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 color: 'var(--text-secondary)',
                 backgroundColor: 'transparent',
                 border: 'none',
@@ -90,6 +95,11 @@ function ControlBar({
               onClick={() => onAdjustSpeed(25)}
               style={{
                 fontSize: '1.25rem',
+                minWidth: '2.75rem',
+                minHeight: '2.75rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 color: 'var(--text-secondary)',
                 backgroundColor: 'transparent',
                 border: 'none',
@@ -114,6 +124,11 @@ function ControlBar({
               onClick={onTogglePlay}
               style={{
                 fontSize: '1.5rem',
+                minWidth: '2.75rem',
+                minHeight: '2.75rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 color: 'var(--text-tertiary)',
                 backgroundColor: 'transparent',
                 border: 'none',
@@ -139,6 +154,11 @@ function ControlBar({
               onClick={onRestart}
               style={{
                 fontSize: '1.25rem',
+                minWidth: '2.75rem',
+                minHeight: '2.75rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 color: 'var(--text-secondary)',
                 backgroundColor: 'transparent',
                 border: 'none',
@@ -164,6 +184,11 @@ function ControlBar({
               onClick={onSkipBackward}
               style={{
                 fontSize: '1.25rem',
+                minWidth: '2.75rem',
+                minHeight: '2.75rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 color: 'var(--text-secondary)',
                 backgroundColor: 'transparent',
                 border: 'none',
@@ -181,6 +206,11 @@ function ControlBar({
               onClick={onSkipForward}
               style={{
                 fontSize: '1.25rem',
+                minWidth: '2.75rem',
+                minHeight: '2.75rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 color: 'var(--text-secondary)',
                 backgroundColor: 'transparent',
                 border: 'none',

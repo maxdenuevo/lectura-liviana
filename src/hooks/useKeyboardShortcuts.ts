@@ -7,6 +7,9 @@ interface KeyboardShortcutsConfig {
   onSpeedDown: () => void;
   onSkipForward: () => void;
   onSkipBackward: () => void;
+  /** Salto grande con Shift+←→ */
+  onSkipForwardBig?: () => void;
+  onSkipBackwardBig?: () => void;
   onToggleConfig: () => void;
   onCloseConfig: () => void;
   onShowHelp?: () => void;
@@ -34,6 +37,8 @@ export function useKeyboardShortcuts({
   onSpeedDown,
   onSkipForward,
   onSkipBackward,
+  onSkipForwardBig,
+  onSkipBackwardBig,
   onToggleConfig,
   onCloseConfig,
   onShowHelp,
@@ -63,11 +68,13 @@ export function useKeyboardShortcuts({
           break;
         case 'ArrowRight':
           e.preventDefault();
-          onSkipForward();
+          if (e.shiftKey && onSkipForwardBig) onSkipForwardBig();
+          else onSkipForward();
           break;
         case 'ArrowLeft':
           e.preventDefault();
-          onSkipBackward();
+          if (e.shiftKey && onSkipBackwardBig) onSkipBackwardBig();
+          else onSkipBackward();
           break;
         case 'ArrowUp':
           e.preventDefault();
@@ -103,5 +110,5 @@ export function useKeyboardShortcuts({
     return () => {
       window.removeEventListener('keydown', handleKeyPress);
     };
-  }, [onTogglePlay, onRestart, onSpeedUp, onSpeedDown, onSkipForward, onSkipBackward, onToggleConfig, onCloseConfig, onShowHelp, isModalOpen]);
+  }, [onTogglePlay, onRestart, onSpeedUp, onSpeedDown, onSkipForward, onSkipBackward, onSkipForwardBig, onSkipBackwardBig, onToggleConfig, onCloseConfig, onShowHelp, isModalOpen]);
 }

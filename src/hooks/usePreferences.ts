@@ -4,7 +4,9 @@ export type ReadingFont = 'atkinson' | 'opendyslexic';
 
 const DEFAULT_WPM = 300;
 const DEFAULT_READING_FONT: ReadingFont = 'atkinson';
-const DEFAULT_SKIP_WORDS = 25;
+// Retroceso fino con ←→ (releer una frase) vs salto grande con Shift+←→
+const DEFAULT_ARROW_STEP = 3;
+const DEFAULT_JUMP_WORDS = 25;
 
 /**
  * Custom hook to manage user preferences with localStorage persistence.
@@ -13,14 +15,15 @@ const DEFAULT_SKIP_WORDS = 25;
 export function usePreferences() {
   const [wpm, setWpm] = useState(DEFAULT_WPM);
   const [readingFont, setReadingFont] = useState<ReadingFont>(DEFAULT_READING_FONT);
-  const [skipWords, setSkipWords] = useState(DEFAULT_SKIP_WORDS);
+  const [arrowStep, setArrowStep] = useState(DEFAULT_ARROW_STEP);
+  const [jumpWords, setJumpWords] = useState(DEFAULT_JUMP_WORDS);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Load preferences on mount
   useEffect(() => {
     try {
       const savedWpm = localStorage.getItem('savedWpm');
-      const savedSkipWords = localStorage.getItem('skipWords');
+      const savedArrowStep = localStorage.getItem('arrowStep');
 
       // Migración desde la preferencia booleana anterior ('dyslexic')
       let savedFont = localStorage.getItem('readingFont');
@@ -29,9 +32,18 @@ export function usePreferences() {
         localStorage.removeItem('dyslexic');
       }
 
+      // Migración: 'skipWords' pasa a ser el salto grande ('jumpWords')
+      let savedJumpWords = localStorage.getItem('jumpWords');
+      const legacySkip = localStorage.getItem('skipWords');
+      if (!savedJumpWords && legacySkip) {
+        savedJumpWords = legacySkip;
+        localStorage.removeItem('skipWords');
+      }
+
       setWpm(savedWpm ? Number(savedWpm) : DEFAULT_WPM);
       setReadingFont(savedFont === 'opendyslexic' ? 'opendyslexic' : DEFAULT_READING_FONT);
-      setSkipWords(savedSkipWords ? Number(savedSkipWords) : DEFAULT_SKIP_WORDS);
+      setArrowStep(savedArrowStep ? Number(savedArrowStep) : DEFAULT_ARROW_STEP);
+      setJumpWords(savedJumpWords ? Number(savedJumpWords) : DEFAULT_JUMP_WORDS);
     } catch (error) {
       console.error('No se pudo acceder a localStorage:', error);
     } finally {
@@ -46,19 +58,22 @@ export function usePreferences() {
     try {
       localStorage.setItem('savedWpm', wpm.toString());
       localStorage.setItem('readingFont', readingFont);
-      localStorage.setItem('skipWords', skipWords.toString());
+      localStorage.setItem('arrowStep', arrowStep.toString());
+      localStorage.setItem('jumpWords', jumpWords.toString());
     } catch (error) {
       console.error('No se pudo guardar en localStorage:', error);
     }
-  }, [wpm, readingFont, skipWords, isLoaded]);
+  }, [wpm, readingFont, arrowStep, jumpWords, isLoaded]);
 
   return {
     wpm,
     setWpm,
     readingFont,
     setReadingFont,
-    skipWords,
-    setSkipWords,
+    arrowStep,
+    setArrowStep,
+    jumpWords,
+    setJumpWords,
     isLoaded,
   };
 }

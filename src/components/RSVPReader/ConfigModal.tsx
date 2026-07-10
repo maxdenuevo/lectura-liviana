@@ -11,7 +11,8 @@ interface ConfigModalProps {
   showConfig: boolean;
   text: string;
   wpm: number;
-  skipWords: number;
+  arrowStep: number;
+  jumpWords: number;
   readingFont: ReadingFont;
   urlInput: string;
   isLoadingUrl: boolean;
@@ -26,7 +27,8 @@ interface ConfigModalProps {
   /** Presente solo cuando el texto pegado aún no está en la biblioteca */
   onSaveToLibrary?: () => void;
   onWpmChange: (wpm: number) => void;
-  onSkipWordsChange: (count: number) => void;
+  onArrowStepChange: (count: number) => void;
+  onJumpWordsChange: (count: number) => void;
   onReadingFontChange: (font: ReadingFont) => void;
   onUrlInputChange: (url: string) => void;
   onUrlLoad: () => void;
@@ -39,7 +41,8 @@ function ConfigModal({
   showConfig,
   text,
   wpm,
-  skipWords,
+  arrowStep,
+  jumpWords,
   readingFont,
   urlInput,
   isLoadingUrl,
@@ -53,7 +56,8 @@ function ConfigModal({
   onTextChange,
   onSaveToLibrary,
   onWpmChange,
-  onSkipWordsChange,
+  onArrowStepChange,
+  onJumpWordsChange,
   onReadingFontChange,
   onUrlInputChange,
   onUrlLoad,
@@ -136,8 +140,14 @@ function ConfigModal({
                 </h2>
                 <button
                   onClick={onClose}
+                  aria-label="Cerrar configuración"
                   style={{
                     fontSize: '1.5rem',
+                    minWidth: '2.75rem',
+                    minHeight: '2.75rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                     color: 'var(--text-muted)',
                     backgroundColor: 'transparent',
                     border: 'none',
@@ -393,11 +403,11 @@ function ConfigModal({
                   <label
                     style={{
                       fontSize: '0.875rem',
-                      fontWeight: '300',
+                      fontWeight: '400',
                       color: 'var(--accent-secondary)',
                     }}
                   >
-                    Salto de palabras (flechas)
+                    Retroceso fino (←→)
                   </label>
                   <span
                     style={{
@@ -406,17 +416,51 @@ function ConfigModal({
                       color: 'var(--accent)',
                     }}
                   >
-                    {skipWords} {skipWords === 1 ? 'palabra' : 'palabras'}
+                    {arrowStep} {arrowStep === 1 ? 'palabra' : 'palabras'}
                   </span>
                 </div>
                 <input
                   type="range"
                   min="1"
-                  max="80"
+                  max="5"
                   step="1"
-                  value={skipWords}
-                  onChange={(e) => onSkipWordsChange(Number(e.target.value))}
+                  value={arrowStep}
+                  onChange={(e) => onArrowStepChange(Number(e.target.value))}
                   className="slider-warm"
+                  aria-label="Retroceso fino con flechas"
+                />
+              </div>
+
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                  <label
+                    style={{
+                      fontSize: '0.875rem',
+                      fontWeight: '400',
+                      color: 'var(--accent-secondary)',
+                    }}
+                  >
+                    Salto grande (Shift+←→ / swipe)
+                  </label>
+                  <span
+                    style={{
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      color: 'var(--accent)',
+                    }}
+                  >
+                    {jumpWords} palabras
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="5"
+                  max="80"
+                  step="5"
+                  value={jumpWords}
+                  onChange={(e) => onJumpWordsChange(Number(e.target.value))}
+                  className="slider-warm"
+                  aria-label="Salto grande con Shift y flechas o swipe"
                 />
               </div>
 
@@ -544,7 +588,8 @@ function ConfigModal({
                   <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', paddingLeft: '1.75rem', lineHeight: 1.6 }}>
                     <div><strong style={{ color: 'var(--text-muted)' }}>Espacio</strong> play/pausa</div>
                     <div><strong style={{ color: 'var(--text-muted)' }}>R</strong> reiniciar</div>
-                    <div><strong style={{ color: 'var(--text-muted)' }}>↔</strong> adelantar/retroceder</div>
+                    <div><strong style={{ color: 'var(--text-muted)' }}>↔</strong> retroceso fino</div>
+                    <div><strong style={{ color: 'var(--text-muted)' }}>Shift+↔</strong> salto grande</div>
                     <div><strong style={{ color: 'var(--text-muted)' }}>↕</strong> velocidad</div>
                     <div><strong style={{ color: 'var(--text-muted)' }}>C</strong> config</div>
                     <div><strong style={{ color: 'var(--text-muted)' }}>Esc</strong> pausar/cerrar</div>

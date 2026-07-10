@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
-import NotificationToast from './NotificationToast';
+import NotificationToast, { type NotificationType } from './NotificationToast';
+import EmptyState from './EmptyState';
 import WordDisplay from './WordDisplay';
 import ControlBar from './ControlBar';
 import ConfigModal from './ConfigModal';
@@ -52,7 +53,7 @@ const formatTime = (seconds: number) => {
 
 export default function RSVPReader() {
   // Preferences (localStorage)
-  const { wpm, setWpm, readingFont, setReadingFont, skipWords, setSkipWords } = usePreferences();
+  const { wpm, setWpm, readingFont, setReadingFont, arrowStep, setArrowStep, jumpWords, setJumpWords } = usePreferences();
   const useDyslexicFont = readingFont === 'opendyslexic';
 
   // Texto activo (viene de la biblioteca o del textarea) y posición de reanudación
@@ -63,7 +64,7 @@ export default function RSVPReader() {
   const [showControls, setShowControls] = useState(true);
   const [showConfig, setShowConfig] = useState(false);
   const [showLibrary, setShowLibrary] = useState(false);
-  const [notification, setNotification] = useState('');
+  const [notification, setNotification] = useState<{ message: string; type: NotificationType }>({ message: '', type: 'info' });
   const [showHelp, setShowHelp] = useState(false);
   const [gestureFeedback, setGestureFeedback] = useState<{ type: 'speed-up' | 'speed-down' | null; wpm?: number }>({ type: null });
   const [srAnnouncement, setSrAnnouncement] = useState('');
@@ -73,6 +74,7 @@ export default function RSVPReader() {
   const controlsTimeout = useRef<NodeJS.Timeout | null>(null);
   const mouseMoveTimeout = useRef<NodeJS.Timeout | null>(null);
   const isHoveringControls = useRef<boolean>(false);
+  const notificationTimeout = useRef<NodeJS.Timeout | null>(null);
 
   // Process words - detect format and parse
   const words = useMemo((): EnrichedWord[] => {
@@ -92,11 +94,22 @@ export default function RSVPReader() {
     return parseSimpleText(trimmedText);
   }, [text]);
 
-  // Notification helper
-  const showNotification = useCallback((message: string) => {
-    setNotification(message);
-    setTimeout(() => setNotification(''), 2000);
+  // Notification helper: los info expiran a los 2s, los errores persisten hasta cerrarlos
+  const showNotification = useCallback((message: string, type: NotificationType = 'info') => {
+    if (notificationTimeout.current) {
+      clearTimeout(notificationTimeout.current);
+      notificationTimeout.current = null;
+    }
+    setNotification({ message, type });
+    if (type === 'info') {
+      notificationTimeout.current = setTimeout(() => {
+        setNotification(current => (current.type === 'info' ? { message: '', type: 'info' } : current));
+      }, 2000);
+    }
   }, []);
+
+  const showError = useCallback((message: string) => showNotification(message, 'error'), [showNotification]);
+  const dismissNotification = useCallback(() => setNotification({ message: '', type: 'info' }), []);
 
   // Biblioteca (IndexedDB): abre el último libro al montar y reanuda su posición
   const handleBookOpened = useCallback((book: StoredBook, savedIndex: number) => {
@@ -120,14 +133,27 @@ export default function RSVPReader() {
     addBookToLibrary,
     removeBook,
     detachActiveBook,
-  } = useLibrary({ onBookOpened: handleBookOpened, onError: showNotification });
+  } = useLibrary({ onBookOpened: handleBookOpened, onError: showError });
 
-  // Texto de bienvenida solo si la biblioteca cargó vacía
+  // Texto de bienvenida solo en la primera carga con biblioteca vacía;
+  // después (p.ej. al borrar el libro activo) se muestra el EmptyState
+  const hasShownWelcome = useRef(false);
   useEffect(() => {
-    if (isLibraryLoaded && !activeBookId && !text) {
+    if (isLibraryLoaded && !activeBookId && !text && !hasShownWelcome.current) {
+      hasShownWelcome.current = true;
       setText(DEFAULT_TEXT);
     }
   }, [isLibraryLoaded, activeBookId, text]);
+
+  // Borrar el libro activo limpia el lector
+  const handleDeleteBook = useCallback((id: string) => {
+    if (id === activeBookId) {
+      setText('');
+      setInitialIndex(0);
+      setEpubData(null);
+    }
+    removeBook(id);
+  }, [activeBookId, removeBook]);
 
   // RSVP Engine
   const {
@@ -204,17 +230,30 @@ export default function RSVPReader() {
     showControlsTemporarily();
   }, [setWpm, showNotification, showControlsTemporarily]);
 
+  // Retroceso fino (←→) para releer; salto grande (Shift+←→ / swipe) para navegar
   const skipForward = useCallback(() => {
-    engineSkipForward(skipWords);
+    engineSkipForward(arrowStep);
     showControlsTemporarily();
-    setSrAnnouncement(`Adelantado ${skipWords} ${skipWords === 1 ? 'palabra' : 'palabras'}`);
-  }, [engineSkipForward, skipWords, showControlsTemporarily]);
+    setSrAnnouncement(`Adelantado ${arrowStep} ${arrowStep === 1 ? 'palabra' : 'palabras'}`);
+  }, [engineSkipForward, arrowStep, showControlsTemporarily]);
 
   const skipBackward = useCallback(() => {
-    engineSkipBackward(skipWords);
+    engineSkipBackward(arrowStep);
     showControlsTemporarily();
-    setSrAnnouncement(`Retrocedido ${skipWords} ${skipWords === 1 ? 'palabra' : 'palabras'}`);
-  }, [engineSkipBackward, skipWords, showControlsTemporarily]);
+    setSrAnnouncement(`Retrocedido ${arrowStep} ${arrowStep === 1 ? 'palabra' : 'palabras'}`);
+  }, [engineSkipBackward, arrowStep, showControlsTemporarily]);
+
+  const skipForwardBig = useCallback(() => {
+    engineSkipForward(jumpWords);
+    showControlsTemporarily();
+    setSrAnnouncement(`Adelantado ${jumpWords} palabras`);
+  }, [engineSkipForward, jumpWords, showControlsTemporarily]);
+
+  const skipBackwardBig = useCallback(() => {
+    engineSkipBackward(jumpWords);
+    showControlsTemporarily();
+    setSrAnnouncement(`Retrocedido ${jumpWords} palabras`);
+  }, [engineSkipBackward, jumpWords, showControlsTemporarily]);
 
   // Offsets de palabra por capítulo: navegar capítulos mueve el índice sobre el
   // texto completo, así la posición guardada y los capítulos comparten un solo índice
@@ -250,7 +289,7 @@ export default function RSVPReader() {
         chapters: loadedEpubData?.chapters,
       });
     },
-    onError: showNotification,
+    onError: showError,
   });
 
   // El textarea edita texto efímero: se despega del libro activo
@@ -281,6 +320,8 @@ export default function RSVPReader() {
     onSpeedDown: () => adjustSpeed(-25),
     onSkipForward: skipForward,
     onSkipBackward: skipBackward,
+    onSkipForwardBig: skipForwardBig,
+    onSkipBackwardBig: skipBackwardBig,
     onToggleConfig: () => setShowConfig(prev => !prev),
     onCloseConfig: () => {
       setShowConfig(false);
@@ -295,8 +336,8 @@ export default function RSVPReader() {
   const { handleTouchStart, handleTouchEnd } = useTouchGestures({
     onTap: togglePlay,
     onDoubleTap: () => setShowConfig(prev => !prev),
-    onSwipeLeft: skipBackward,
-    onSwipeRight: skipForward,
+    onSwipeLeft: skipBackwardBig,
+    onSwipeRight: skipForwardBig,
     onSwipeUp: () => adjustSpeed(25, true),
     onSwipeDown: () => adjustSpeed(-25, true),
   });
@@ -376,7 +417,7 @@ export default function RSVPReader() {
         <div className="candle-scene" aria-hidden="true" />
 
         {/* Notificación flotante */}
-        <NotificationToast message={notification} />
+        <NotificationToast message={notification.message} type={notification.type} onDismiss={dismissNotification} />
 
         {/* First visit hints */}
         <FirstVisitHints onLoadExample={handleLoadExample} />
@@ -394,7 +435,7 @@ export default function RSVPReader() {
           activeBookId={activeBookId}
           onClose={closeLibrary}
           onOpenBook={openBook}
-          onDeleteBook={removeBook}
+          onDeleteBook={handleDeleteBook}
         />
 
         {/* Screen reader announcements */}
@@ -535,12 +576,16 @@ export default function RSVPReader() {
         )}
 
         {/* Área de lectura principal */}
-        <WordDisplay
-          currentIndex={currentIndex}
-          wordParts={wordParts}
-          wordType={currentWordType}
-          progress={progress}
-        />
+        {isLibraryLoaded && words.length === 0 ? (
+          <EmptyState onOpenLibrary={openLibrary} onOpenConfig={openConfig} />
+        ) : (
+          <WordDisplay
+            currentIndex={currentIndex}
+            wordParts={wordParts}
+            wordType={currentWordType}
+            progress={progress}
+          />
+        )}
 
         {/* Controles flotantes */}
         <ControlBar
@@ -561,7 +606,8 @@ export default function RSVPReader() {
           showConfig={showConfig}
           text={text}
           wpm={wpm}
-          skipWords={skipWords}
+          arrowStep={arrowStep}
+          jumpWords={jumpWords}
           readingFont={readingFont}
           urlInput={urlInput}
           isLoadingUrl={isLoadingUrl}
@@ -576,7 +622,8 @@ export default function RSVPReader() {
           onTextChange={handleTextChange}
           onSaveToLibrary={activeBookId ? undefined : handleSaveToLibrary}
           onWpmChange={setWpm}
-          onSkipWordsChange={setSkipWords}
+          onArrowStepChange={setArrowStep}
+          onJumpWordsChange={setJumpWords}
           onReadingFontChange={setReadingFont}
           onUrlInputChange={setUrlInput}
           onUrlLoad={loadFromUrl}
