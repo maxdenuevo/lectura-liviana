@@ -103,5 +103,5 @@ export function useKeyboardShortcuts({
     return () => {
       window.removeEventListener('keydown', handleKeyPress);
     };
-  }, [onTogglePlay, onRestart, onSpeedUp, onSpeedDown, onSkipForward, onSkipBackward, onToggleConfig, onCloseConfig, onShowHelp]);
+  }, [onTogglePlay, onRestart, onSpeedUp, onSpeedDown, onSkipForward, onSkipBackward, onToggleConfig, onCloseConfig, onShowHelp, isModalOpen]);
 }

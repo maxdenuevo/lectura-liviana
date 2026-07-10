@@ -1,4 +1,4 @@
-import { motion, AnimatePresence, useMotionValue, useSpring } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { WordParts, WordType } from './types';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useEffect, useRef } from 'react';

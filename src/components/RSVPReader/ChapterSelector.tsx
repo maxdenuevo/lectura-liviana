@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import { type EpubChapter } from '@/lib/epubParser';
 import { theme } from '@/lib/theme';
 
@@ -8,8 +7,6 @@ interface ChapterSelectorProps {
 }
 
 export default function ChapterSelector({ chapters, onChapterSelect }: ChapterSelectorProps) {
-  const [expandedChapter, setExpandedChapter] = useState<number | null>(null);
-
   const handleChapterClick = (chapter: EpubChapter) => {
     onChapterSelect(chapter);
   };

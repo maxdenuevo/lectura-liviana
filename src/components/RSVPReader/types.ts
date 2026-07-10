@@ -13,7 +13,3 @@ export interface EnrichedWord {
   type: WordType;
   sectionTitle?: string; // For breadcrumbs (optional future feature)
 }
-
-export interface RSVPReaderProps {
-  // Future: can accept initial text, wpm, etc.
-}

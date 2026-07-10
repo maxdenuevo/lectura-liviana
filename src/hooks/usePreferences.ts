@@ -1,12 +1,5 @@
 import { useState, useEffect } from 'react';
 
-interface Preferences {
-  wpm: number;
-  useDyslexicFont: boolean;
-  savedText: string | null;
-  skipWords: number;
-}
-
 const DEFAULT_WPM = 300;
 const DEFAULT_DYSLEXIC = false;
 const DEFAULT_SKIP_WORDS = 25;

@@ -15,7 +15,6 @@ import { useRSVPEngine } from '@/hooks/useRSVPEngine';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useTouchGestures } from '@/hooks/useTouchGestures';
 import { useTextLoader } from '@/hooks/useTextLoader';
-import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { theme } from '@/lib/theme';
 import { parseText, parseSimpleText } from '@/lib/textParser';
 import { type EpubBook } from '@/lib/epubParser';
@@ -26,9 +25,6 @@ const DEFAULT_TEXT = "Bienvenido a tu espacio de lectura rápida. Un lugar cáli
 export default function RSVPReader() {
   // Preferences (localStorage)
   const { wpm, setWpm, useDyslexicFont, setUseDyslexicFont, skipWords, setSkipWords, text, setText } = usePreferences(DEFAULT_TEXT);
-
-  // Motion preferences
-  const prefersReducedMotion = useReducedMotion();
 
   // UI state
   const [showControls, setShowControls] = useState(true);
@@ -76,7 +72,6 @@ export default function RSVPReader() {
     timeRemaining,
     currentWord,
     currentWordType,
-    setIsPlaying,
     togglePlay: engineTogglePlay,
     restart: engineRestart,
     skipForward: engineSkipForward,
@@ -317,7 +312,6 @@ export default function RSVPReader() {
 
         {/* First visit hints */}
         <FirstVisitHints
-          onDismiss={() => {}}
           onLoadExample={(url) => {
             setUrlInput(url);
             // Wait for state to update, then load

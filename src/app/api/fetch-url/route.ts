@@ -2,8 +2,17 @@ import { NextResponse } from 'next/server';
 import { Readability } from '@mozilla/readability';
 import { JSDOM } from 'jsdom';
 
+interface ArticleResult {
+  title: string;
+  content: string;
+  excerpt: string;
+  byline?: string;
+  length: number;
+  success: true;
+}
+
 // Caché simple en memoria (considera usar Redis en producción)
-const cache = new Map<string, { data: any; timestamp: number }>();
+const cache = new Map<string, { data: ArticleResult; timestamp: number }>();
 const CACHE_TTL = 3600000; // 1 hora
 const FETCH_TIMEOUT = 10000; // 10 segundos
 const MAX_CACHE_SIZE = 100; // Máximo número de entries en cache
@@ -76,7 +85,7 @@ async function validateURL(urlString: string): Promise<{ valid: boolean; error?:
     }
 
     return { valid: true };
-  } catch (error) {
+  } catch {
     return { valid: false, error: 'Formato de URL inválido' };
   }
 }
@@ -322,8 +331,8 @@ export async function POST(request: Request) {
     const reader = new Readability(dom.window.document);
     const article = reader.parse();
     
-    let result;
-    
+    let result: ArticleResult;
+
     if (article && article.textContent) {
       // Limpiar y procesar el contenido
       // Límite: 500K caracteres (~80K palabras, suficiente para libros completos)

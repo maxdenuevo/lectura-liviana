@@ -48,7 +48,7 @@ export function useTextLoader({ onTextLoaded, onError }: UseTextLoaderConfig): T
         const errorMsg = data.hint ? `${data.error}\n${data.hint}` : data.error;
         onError(errorMsg || 'Error al cargar URL');
       }
-    } catch (error) {
+    } catch {
       onError('Error de conexión. Verifica tu conexión a internet.');
     } finally {
       setIsLoadingUrl(false);

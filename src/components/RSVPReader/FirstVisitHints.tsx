@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { theme } from '@/lib/theme';
 
 interface FirstVisitHintsProps {
-  onDismiss: () => void;
+  onDismiss?: () => void;
   onLoadExample?: (url: string) => void;
 }
 
@@ -21,7 +21,7 @@ export default function FirstVisitHints({ onDismiss, onLoadExample }: FirstVisit
   const handleDismiss = () => {
     localStorage.setItem('hasSeenHints', 'true');
     setShow(false);
-    onDismiss();
+    onDismiss?.();
   };
 
   return (

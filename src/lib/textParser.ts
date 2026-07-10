@@ -5,7 +5,7 @@ import { EnrichedWord, WordType } from '@/components/RSVPReader/types';
  */
 
 // Lazy-load DOMPurify solo en el cliente para evitar problemas con SSR
-let DOMPurify: any = null;
+let DOMPurify: typeof import('dompurify').default | null = null;
 if (typeof window !== 'undefined') {
   import('dompurify').then(module => {
     DOMPurify = module.default;
@@ -15,19 +15,6 @@ if (typeof window !== 'undefined') {
 // Configuración de DOMPurify para permitir solo tags seguros necesarios para el parsing
 const ALLOWED_TAGS = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'br'];
 const ALLOWED_ATTR: string[] = []; // No necesitamos atributos
-
-// HTML tag patterns
-const HTML_HEADING_REGEX = /<h([1-6])[^>]*>(.*?)<\/h\1>/gi;
-const HTML_TAG_REGEX = /<[^>]+>/g;
-const HTML_LIST_ITEM_REGEX = /<li[^>]*>(.*?)<\/li>/gi;
-const HTML_CODE_REGEX = /<code[^>]*>(.*?)<\/code>/gi;
-const HTML_BLOCKQUOTE_REGEX = /<blockquote[^>]*>(.*?)<\/blockquote>/gi;
-
-// Markdown patterns
-const MD_HEADING_REGEX = /^(#{1,6})\s+(.+)$/gm;
-const MD_LIST_ITEM_REGEX = /^[\s]*[-*+]\s+(.+)$/gm;
-const MD_CODE_INLINE_REGEX = /`([^`]+)`/g;
-const MD_BLOCKQUOTE_REGEX = /^>\s+(.+)$/gm;
 
 interface ParsedSegment {
   text: string;
@@ -54,7 +41,6 @@ function parseHTML(html: string): ParsedSegment[] {
   }
 
   const segments: ParsedSegment[] = [];
-  let currentPosition = 0;
   let lastSectionTitle: string | undefined;
 
   // Sanitizar HTML antes de parsearlo para prevenir XSS

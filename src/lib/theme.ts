@@ -110,10 +110,3 @@ export const theme = {
 } as const;
 
 export type Theme = typeof theme;
-
-// Helper to get color with opacity
-export const withOpacity = (color: string, opacity: number): string => {
-  return color.includes('rgba')
-    ? color.replace(/[\d.]+\)$/, `${opacity})`)
-    : `${color}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`;
-};

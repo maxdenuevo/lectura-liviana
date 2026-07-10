@@ -135,7 +135,7 @@ function extractChapterTitle(html: string): string {
     }
 
     return 'Capítulo sin título';
-  } catch (error) {
+  } catch {
     return 'Capítulo sin título';
   }
 }
