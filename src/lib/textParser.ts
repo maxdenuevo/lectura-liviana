@@ -1,4 +1,5 @@
 import { EnrichedWord, WordType } from '@/components/RSVPReader/types';
+import { stripUnsafeHtml } from './htmlText';
 
 /**
  * Parses text with HTML or Markdown formatting and enriches words with structural metadata
@@ -52,11 +53,8 @@ function parseHTML(html: string): ParsedSegment[] {
       KEEP_CONTENT: true, // Mantener el contenido de tags no permitidos
     });
   } else {
-    // Si DOMPurify no está cargado aún, usar un regex simple para remover scripts y eventos
-    sanitizedHtml = html
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '') // Remover event handlers
-      .replace(/javascript:/gi, ''); // Remover javascript: URLs
+    // Si DOMPurify no está cargado aún, limpieza básica por regex
+    sanitizedHtml = stripUnsafeHtml(html);
   }
 
   // Create a temporary container to parse HTML

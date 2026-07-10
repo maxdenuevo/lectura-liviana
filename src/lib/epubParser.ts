@@ -1,3 +1,5 @@
+import { decodeEntities, stripHtmlToText } from './htmlText';
+
 /**
  * Parser for EPUB files
  * Extracts text content from EPUB ebooks (ignoring images and styles)
@@ -122,14 +124,7 @@ function extractChapterTitle(html: string): string {
 
     for (const match of titleMatches) {
       if (match && match[1].trim()) {
-        return match[1]
-          .replace(/&nbsp;/g, ' ')
-          .replace(/&amp;/g, '&')
-          .replace(/&lt;/g, '<')
-          .replace(/&gt;/g, '>')
-          .replace(/&quot;/g, '"')
-          .replace(/&#39;/g, "'")
-          .trim();
+        return decodeEntities(match[1]).trim();
       }
     }
 
@@ -144,33 +139,8 @@ function extractChapterTitle(html: string): string {
  */
 function extractTextFromHTML(html: string): string {
   try {
-    // Remove script and style tags
-    let text = html
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
-
-    // Remove HTML tags but preserve spacing
-    text = text
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<\/p>/gi, '\n\n')
-      .replace(/<\/div>/gi, '\n')
-      .replace(/<\/h[1-6]>/gi, '\n\n')
-      .replace(/<[^>]+>/g, ' ');
-
-    // Clean up whitespace
-    text = text
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'")
-      .replace(/\s+/g, ' ')
-      .replace(/\n\s+/g, '\n')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
-
-    return text + '\n\n';
+    const text = stripHtmlToText(html);
+    return text ? text + '\n\n' : '';
   } catch (error) {
     console.error('Error extracting text from HTML:', error);
     return '';
