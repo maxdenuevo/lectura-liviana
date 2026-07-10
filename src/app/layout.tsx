@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Atkinson_Hyperlegible } from "next/font/google";
 import "./globals.css";
 
@@ -9,6 +9,10 @@ const atkinson = Atkinson_Hyperlegible({
   display: "swap",
   variable: "--font-reading",
 });
+
+export const viewport: Viewport = {
+  themeColor: "#0a0908",
+};
 
 export const metadata: Metadata = {
   title: "Lectura Liviana 🕯️ - RSVP Reader",

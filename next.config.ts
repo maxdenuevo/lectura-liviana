@@ -1,4 +1,19 @@
 import type { NextConfig } from "next";
+import withSerwistInit from "@serwist/next";
+import crypto from "crypto";
+
+// Nueva revisión por build para que el documento precacheado se actualice
+const revision = crypto.randomUUID();
+
+const withSerwist = withSerwistInit({
+  swSrc: "src/app/sw.ts",
+  swDest: "public/sw.js",
+  // El documento raíz no entra al precache de App Router por defecto;
+  // sin esto el fallback offline no tiene qué servir
+  additionalPrecacheEntries: [{ url: "/", revision }],
+  // El SW solo corre en producción; en dev (turbopack) queda deshabilitado
+  disable: process.env.NODE_ENV === "development",
+});
 
 const nextConfig: NextConfig = {
   async headers() {
@@ -56,4 +71,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSerwist(nextConfig);
