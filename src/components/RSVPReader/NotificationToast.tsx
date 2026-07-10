@@ -24,9 +24,9 @@ export default function NotificationToast({ message }: NotificationToastProps) {
             fontWeight: '300',
             zIndex: 50,
             pointerEvents: 'none',
-            backgroundColor: 'rgba(28, 25, 23, 0.9)',
+            backgroundColor: 'var(--notification-bg)',
             backdropFilter: 'blur(12px)',
-            color: '#fbbf24',
+            color: 'var(--accent)',
           }}
         >
           {message}

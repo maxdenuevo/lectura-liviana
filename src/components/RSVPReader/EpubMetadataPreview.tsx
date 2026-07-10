@@ -14,8 +14,8 @@ export default function EpubMetadataPreview({ epubData }: EpubMetadataPreviewPro
       style={{
         padding: '1rem',
         borderRadius: '0.75rem',
-        backgroundColor: 'rgba(251, 191, 36, 0.1)',
-        border: '1px solid rgba(251, 191, 36, 0.2)',
+        backgroundColor: 'var(--accent-faint)',
+        border: '1px solid var(--accent-subtle)',
         marginBottom: '1rem',
       }}
     >

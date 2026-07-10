@@ -48,7 +48,7 @@ export default function ShortcutsHelp({ showHelp, onClose }: ShortcutsHelpProps)
             justifyContent: 'center',
             padding: theme.spacing.md,
             zIndex: theme.zIndex.modal + 1,
-            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            backgroundColor: 'var(--overlay)',
             backdropFilter: 'blur(8px)',
             WebkitBackdropFilter: 'blur(8px)',
             willChange: 'opacity',
@@ -283,7 +283,7 @@ export default function ShortcutsHelp({ showHelp, onClose }: ShortcutsHelpProps)
                       textDecoration: 'none',
                       transition: 'color 0.2s ease',
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = theme.colors.amber300}
+                    onMouseEnter={(e) => e.currentTarget.style.color = theme.colors.text}
                     onMouseLeave={(e) => e.currentTarget.style.color = theme.colors.accent}
                   >
                     maxdenuevo

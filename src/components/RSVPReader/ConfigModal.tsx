@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import React from 'react';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import { type ReadingFont } from '@/hooks/usePreferences';
 import { EnrichedWord } from './types';
 import { type EpubBook } from '@/lib/epubParser';
 import EpubMetadataPreview from './EpubMetadataPreview';
@@ -12,7 +13,7 @@ interface ConfigModalProps {
   text: string;
   wpm: number;
   skipWords: number;
-  useDyslexicFont: boolean;
+  readingFont: ReadingFont;
   urlInput: string;
   isLoadingUrl: boolean;
   epubProgress: number;
@@ -25,7 +26,7 @@ interface ConfigModalProps {
   onTextChange: (text: string) => void;
   onWpmChange: (wpm: number) => void;
   onSkipWordsChange: (count: number) => void;
-  onDyslexicFontChange: (enabled: boolean) => void;
+  onReadingFontChange: (font: ReadingFont) => void;
   onUrlInputChange: (url: string) => void;
   onUrlLoad: () => void;
   onFileLoad: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -38,7 +39,7 @@ export default function ConfigModal({
   text,
   wpm,
   skipWords,
-  useDyslexicFont,
+  readingFont,
   urlInput,
   isLoadingUrl,
   epubProgress,
@@ -51,7 +52,7 @@ export default function ConfigModal({
   onTextChange,
   onWpmChange,
   onSkipWordsChange,
-  onDyslexicFontChange,
+  onReadingFontChange,
   onUrlInputChange,
   onUrlLoad,
   onFileLoad,
@@ -76,7 +77,7 @@ export default function ConfigModal({
           <style>{`
             #config-textarea::placeholder,
             #config-url-input::placeholder {
-              color: rgba(252, 211, 77, 0.4);
+              color: var(--accent-muted);
               opacity: 1;
             }
           `}</style>
@@ -93,7 +94,7 @@ export default function ConfigModal({
             justifyContent: 'center',
             padding: '1rem',
             zIndex: 50,
-            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            backgroundColor: 'var(--overlay)',
             backdropFilter: 'blur(8px)',
             WebkitBackdropFilter: 'blur(8px)',
             willChange: 'opacity',
@@ -120,7 +121,7 @@ export default function ConfigModal({
               width: '100%',
               maxHeight: '90vh',
               overflowY: 'auto',
-              backgroundColor: 'rgba(28, 25, 23, 0.98)',
+              backgroundColor: 'var(--surface-modal)',
               willChange: 'transform, opacity',
               boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
             }}
@@ -133,7 +134,7 @@ export default function ConfigModal({
                   style={{
                     fontSize: '1.25rem',
                     fontWeight: '300',
-                    color: 'rgba(252, 211, 77, 0.8)',
+                    color: 'var(--accent-secondary)',
                     margin: 0,
                   }}
                 >
@@ -143,14 +144,14 @@ export default function ConfigModal({
                   onClick={onClose}
                   style={{
                     fontSize: '1.5rem',
-                    color: 'rgba(231, 229, 228, 0.4)',
+                    color: 'var(--text-muted)',
                     backgroundColor: 'transparent',
                     border: 'none',
                     cursor: 'pointer',
                     transition: 'color 0.2s ease',
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = '#e7e5e4'}
-                  onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(231, 229, 228, 0.4)'}
+                  onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text)'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
                 >
                   ×
                 </button>
@@ -163,7 +164,7 @@ export default function ConfigModal({
                     fontWeight: '300',
                     marginBottom: '0.5rem',
                     display: 'block',
-                    color: 'rgba(252, 211, 77, 0.6)',
+                    color: 'var(--accent-secondary)',
                   }}
                 >
                   Pega aquí abajo tu texto 
@@ -181,7 +182,7 @@ export default function ConfigModal({
                     border: 'none',
                     outline: 'none',
                     backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                    color: 'rgba(252, 211, 77, 0.8)',
+                    color: 'var(--accent-secondary)',
                     fontSize: '0.875rem',
                     boxSizing: 'border-box',
                   }}
@@ -195,7 +196,7 @@ export default function ConfigModal({
                   fontWeight: '300',
                   marginBottom: '0.5rem',
                   display: 'block',
-                  color: 'rgba(252, 211, 77, 0.6)',
+                  color: 'var(--accent-secondary)',
                 }}>
                   Cargar desde tu computador
                 </label>
@@ -206,8 +207,8 @@ export default function ConfigModal({
                       flex: 1,
                       padding: '0.75rem 1rem',
                       borderRadius: '0.5rem',
-                      backgroundColor: 'rgba(251, 191, 36, 0.2)',
-                      color: '#fbbf24',
+                      backgroundColor: 'var(--accent-subtle)',
+                      color: 'var(--accent)',
                       border: 'none',
                       cursor: 'pointer',
                       transition: 'all 0.2s ease',
@@ -217,8 +218,8 @@ export default function ConfigModal({
                       gap: '0.5rem',
                       fontSize: '0.875rem',
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(251, 191, 36, 0.3)'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(251, 191, 36, 0.2)'}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-dim)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-subtle)'}
                   >
                     <svg
                       width="16"
@@ -252,12 +253,12 @@ export default function ConfigModal({
                     marginTop: '0.75rem',
                     padding: '0.75rem',
                     borderRadius: '0.5rem',
-                    backgroundColor: 'rgba(251, 191, 36, 0.1)',
-                    border: '1px solid rgba(251, 191, 36, 0.3)',
+                    backgroundColor: 'var(--accent-faint)',
+                    border: '1px solid var(--accent-dim)',
                   }}>
                     <div style={{
                       fontSize: '0.875rem',
-                      color: '#fbbf24',
+                      color: 'var(--accent)',
                       marginBottom: '0.5rem',
                     }}>
                       {epubStatus}
@@ -272,13 +273,13 @@ export default function ConfigModal({
                       <div style={{
                         width: `${epubProgress}%`,
                         height: '100%',
-                        backgroundColor: '#fbbf24',
+                        backgroundColor: 'var(--accent)',
                         transition: 'width 0.3s ease',
                       }} />
                     </div>
                     <div style={{
                       fontSize: '0.75rem',
-                      color: 'rgba(252, 211, 77, 0.6)',
+                      color: 'var(--accent-secondary)',
                       marginTop: '0.25rem',
                       textAlign: 'right',
                     }}>
@@ -295,7 +296,7 @@ export default function ConfigModal({
                   fontWeight: '300',
                   marginBottom: '0.5rem',
                   display: 'block',
-                  color: 'rgba(252, 211, 77, 0.6)',
+                  color: 'var(--accent-secondary)',
                 }}>
                   Cargar desde internet
                 </label>
@@ -312,7 +313,7 @@ export default function ConfigModal({
                       borderRadius: '0.5rem',
                       border: 'none',
                       backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                      color: 'rgba(252, 211, 77, 0.8)',
+                      color: 'var(--accent-secondary)',
                       fontSize: '0.875rem',
                       outline: 'none',
                     }}
@@ -324,8 +325,8 @@ export default function ConfigModal({
                     style={{
                       padding: '0.75rem 1rem',
                       borderRadius: '0.5rem',
-                      backgroundColor: isLoadingUrl ? 'rgba(0, 0, 0, 0.2)' : 'rgba(251, 191, 36, 0.2)',
-                      color: isLoadingUrl ? 'rgba(231, 229, 228, 0.4)' : '#fbbf24',
+                      backgroundColor: isLoadingUrl ? 'rgba(0, 0, 0, 0.2)' : 'var(--accent-subtle)',
+                      color: isLoadingUrl ? 'var(--text-muted)' : 'var(--accent)',
                       border: 'none',
                       cursor: isLoadingUrl ? 'not-allowed' : 'pointer',
                       transition: 'all 0.2s ease',
@@ -347,7 +348,7 @@ export default function ConfigModal({
                     style={{
                       fontSize: '0.875rem',
                       fontWeight: '300',
-                      color: 'rgba(252, 211, 77, 0.6)',
+                      color: 'var(--accent-secondary)',
                     }}
                   >
                     Velocidad de lectura
@@ -356,7 +357,7 @@ export default function ConfigModal({
                     style={{
                       fontSize: '0.875rem',
                       fontWeight: '500',
-                      color: '#fbbf24',
+                      color: 'var(--accent)',
                     }}
                   >
                     {wpm} ppm
@@ -379,7 +380,7 @@ export default function ConfigModal({
                     style={{
                       fontSize: '0.875rem',
                       fontWeight: '300',
-                      color: 'rgba(252, 211, 77, 0.6)',
+                      color: 'var(--accent-secondary)',
                     }}
                   >
                     Salto de palabras (flechas)
@@ -388,7 +389,7 @@ export default function ConfigModal({
                     style={{
                       fontSize: '0.875rem',
                       fontWeight: '500',
-                      color: '#fbbf24',
+                      color: 'var(--accent)',
                     }}
                   >
                     {skipWords} {skipWords === 1 ? 'palabra' : 'palabras'}
@@ -405,67 +406,71 @@ export default function ConfigModal({
                 />
               </div>
 
-              <label
+              <fieldset
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  cursor: 'pointer',
+                  border: 'none',
+                  padding: 0,
+                  margin: 0,
                 }}
               >
-                <span
+                <legend
                   style={{
                     fontSize: '0.875rem',
-                    fontWeight: '300',
-                    color: 'rgba(252, 211, 77, 0.6)',
-                    fontFamily: 'OpenDyslexic, sans-serif',
+                    fontWeight: '400',
+                    marginBottom: '0.5rem',
+                    padding: 0,
+                    color: 'var(--accent-secondary)',
                   }}
                 >
-                  Fuente especial para dislexia
-                </span>
-                <div style={{ position: 'relative', flexShrink: 0 }}>
-                  <input
-                    type="checkbox"
-                    checked={useDyslexicFont}
-                    onChange={(e) => onDyslexicFontChange(e.target.checked)}
-                    style={{
-                      position: 'absolute',
-                      width: '1px',
-                      height: '1px',
-                      padding: 0,
-                      margin: '-1px',
-                      overflow: 'hidden',
-                      clip: 'rect(0, 0, 0, 0)',
-                      whiteSpace: 'nowrap',
-                      border: 0,
-                    }}
-                  />
-                  <div
-                    style={{
-                      width: '3rem',
-                      height: '1.75rem',
-                      borderRadius: '0.875rem',
-                      backgroundColor: useDyslexicFont ? 'rgba(251, 191, 36, 0.3)' : 'rgba(0, 0, 0, 0.3)',
-                      transition: 'background-color 0.2s ease',
-                      boxSizing: 'border-box',
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: '0.125rem',
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: '1.5rem',
-                        height: '1.5rem',
-                        borderRadius: '50%',
-                        backgroundColor: '#e7e5e4',
-                        transform: useDyslexicFont ? 'translateX(1.25rem)' : 'translateX(0)',
-                        transition: 'transform 0.2s ease',
-                      }}
-                    />
-                  </div>
+                  Fuente de lectura
+                </legend>
+                <div style={{ display: 'flex', gap: '0.5rem' }} role="radiogroup" aria-label="Fuente de lectura">
+                  {([
+                    { value: 'atkinson', label: 'Atkinson Hyperlegible', fontFamily: 'inherit' },
+                    { value: 'opendyslexic', label: 'OpenDyslexic', fontFamily: "'OpenDyslexic', sans-serif" },
+                  ] as const).map((option) => {
+                    const selected = readingFont === option.value;
+                    return (
+                      <label
+                        key={option.value}
+                        style={{
+                          flex: 1,
+                          padding: '0.75rem 0.5rem',
+                          borderRadius: '0.5rem',
+                          border: `1px solid ${selected ? 'var(--accent)' : 'var(--border)'}`,
+                          backgroundColor: selected ? 'var(--accent-subtle)' : 'transparent',
+                          color: selected ? 'var(--accent)' : 'var(--text-secondary)',
+                          cursor: 'pointer',
+                          textAlign: 'center',
+                          fontSize: '0.8rem',
+                          fontFamily: option.fontFamily,
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        <input
+                          type="radio"
+                          name="reading-font"
+                          value={option.value}
+                          checked={selected}
+                          onChange={() => onReadingFontChange(option.value)}
+                          style={{
+                            position: 'absolute',
+                            width: '1px',
+                            height: '1px',
+                            padding: 0,
+                            margin: '-1px',
+                            overflow: 'hidden',
+                            clip: 'rect(0, 0, 0, 0)',
+                            whiteSpace: 'nowrap',
+                            border: 0,
+                          }}
+                        />
+                        {option.label}
+                      </label>
+                    );
+                  })}
                 </div>
-              </label>
+              </fieldset>
 
               {words.length > 0 && (
                 <div
@@ -476,17 +481,17 @@ export default function ConfigModal({
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                    <span style={{ color: 'rgba(231, 229, 228, 0.4)' }}>Total</span>
-                    <span style={{ color: 'rgba(231, 229, 228, 0.6)' }}>{formatWordCount(words.length)} palabras</span>
+                    <span style={{ color: 'var(--text-muted)' }}>Total</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>{formatWordCount(words.length)} palabras</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                    <span style={{ color: 'rgba(231, 229, 228, 0.4)' }}>Tiempo estimado</span>
-                    <span style={{ color: 'rgba(231, 229, 228, 0.6)' }}>{formatTime(Math.ceil(words.length / wpm * 60))}</span>
+                    <span style={{ color: 'var(--text-muted)' }}>Tiempo estimado</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>{formatTime(Math.ceil(words.length / wpm * 60))}</span>
                   </div>
                   {currentIndex > 0 && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem' }}>
-                      <span style={{ color: 'rgba(231, 229, 228, 0.4)' }}>Tiempo restante</span>
-                      <span style={{ color: 'rgba(231, 229, 228, 0.6)' }}>{formatTime(timeRemaining)}</span>
+                      <span style={{ color: 'var(--text-muted)' }}>Tiempo restante</span>
+                      <span style={{ color: 'var(--text-secondary)' }}>{formatTime(timeRemaining)}</span>
                     </div>
                   )}
                 </div>
@@ -511,39 +516,39 @@ export default function ConfigModal({
               <div
                 style={{
                   paddingTop: '1rem',
-                  borderTop: '1px solid rgba(180, 83, 9, 0.2)',
+                  borderTop: '1px solid var(--border)',
                 }}
               >
                 <div style={{ marginBottom: '0.75rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(252, 211, 77, 0.6)" strokeWidth="2">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-secondary)" strokeWidth="2">
                       <rect x="2" y="4" width="20" height="16" rx="2"/>
                       <path d="M6 8h.01M10 8h.01M14 8h.01"/>
                     </svg>
-                    <span style={{ fontSize: '0.75rem', fontWeight: '500', color: 'rgba(252, 211, 77, 0.6)' }}>Teclado</span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: '500', color: 'var(--accent-secondary)' }}>Teclado</span>
                   </div>
-                  <div style={{ fontSize: '0.7rem', color: 'rgba(231, 229, 228, 0.4)', paddingLeft: '1.75rem', lineHeight: 1.6 }}>
-                    <div><strong style={{ color: 'rgba(231, 229, 228, 0.5)' }}>Espacio</strong> play/pausa</div>
-                    <div><strong style={{ color: 'rgba(231, 229, 228, 0.5)' }}>R</strong> reiniciar</div>
-                    <div><strong style={{ color: 'rgba(231, 229, 228, 0.5)' }}>↔</strong> adelantar/retroceder</div>
-                    <div><strong style={{ color: 'rgba(231, 229, 228, 0.5)' }}>↕</strong> velocidad</div>
-                    <div><strong style={{ color: 'rgba(231, 229, 228, 0.5)' }}>C</strong> config</div>
-                    <div><strong style={{ color: 'rgba(231, 229, 228, 0.5)' }}>Esc</strong> pausar/cerrar</div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', paddingLeft: '1.75rem', lineHeight: 1.6 }}>
+                    <div><strong style={{ color: 'var(--text-muted)' }}>Espacio</strong> play/pausa</div>
+                    <div><strong style={{ color: 'var(--text-muted)' }}>R</strong> reiniciar</div>
+                    <div><strong style={{ color: 'var(--text-muted)' }}>↔</strong> adelantar/retroceder</div>
+                    <div><strong style={{ color: 'var(--text-muted)' }}>↕</strong> velocidad</div>
+                    <div><strong style={{ color: 'var(--text-muted)' }}>C</strong> config</div>
+                    <div><strong style={{ color: 'var(--text-muted)' }}>Esc</strong> pausar/cerrar</div>
                   </div>
                 </div>
                 <div className="md:hidden">
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(252, 211, 77, 0.6)" strokeWidth="2">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-secondary)" strokeWidth="2">
                       <rect x="5" y="2" width="14" height="20" rx="2"/>
                       <path d="M12 18h.01"/>
                     </svg>
-                    <span style={{ fontSize: '0.75rem', fontWeight: '500', color: 'rgba(252, 211, 77, 0.6)' }}>Gestos</span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: '500', color: 'var(--accent-secondary)' }}>Gestos</span>
                   </div>
-                  <div style={{ fontSize: '0.7rem', color: 'rgba(231, 229, 228, 0.4)', paddingLeft: '1.75rem', lineHeight: 1.6 }}>
-                    <div><strong style={{ color: 'rgba(231, 229, 228, 0.5)' }}>Tap</strong> play/pausa</div>
-                    <div><strong style={{ color: 'rgba(231, 229, 228, 0.5)' }}>Doble tap</strong> config</div>
-                    <div><strong style={{ color: 'rgba(231, 229, 228, 0.5)' }}>Swipe ↔</strong> adelantar/retroceder</div>
-                    <div><strong style={{ color: 'rgba(231, 229, 228, 0.5)' }}>Swipe ↕</strong> velocidad</div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', paddingLeft: '1.75rem', lineHeight: 1.6 }}>
+                    <div><strong style={{ color: 'var(--text-muted)' }}>Tap</strong> play/pausa</div>
+                    <div><strong style={{ color: 'var(--text-muted)' }}>Doble tap</strong> config</div>
+                    <div><strong style={{ color: 'var(--text-muted)' }}>Swipe ↔</strong> adelantar/retroceder</div>
+                    <div><strong style={{ color: 'var(--text-muted)' }}>Swipe ↕</strong> velocidad</div>
                   </div>
                 </div>
               </div>
@@ -552,9 +557,9 @@ export default function ConfigModal({
                 style={{
                   fontSize: '0.75rem',
                   paddingTop: '1rem',
-                  borderTop: '1px solid rgba(180, 83, 9, 0.2)',
+                  borderTop: '1px solid var(--border)',
                   textAlign: 'center',
-                  color: 'rgba(231, 229, 228, 0.3)',
+                  color: 'var(--text-muted)',
                 }}
               >
                 <p style={{ margin: 0 }}>
@@ -564,12 +569,12 @@ export default function ConfigModal({
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{
-                      color: 'rgba(251, 191, 36, 0.6)',
+                      color: 'var(--accent-muted)',
                       textDecoration: 'none',
                       transition: 'color 0.2s ease',
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = 'rgba(251, 191, 36, 0.9)'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(251, 191, 36, 0.6)'}
+                    onMouseEnter={(e) => e.currentTarget.style.color = 'var(--accent)'}
+                    onMouseLeave={(e) => e.currentTarget.style.color = 'var(--accent-muted)'}
                   >
                     maxdenuevo
                   </a>

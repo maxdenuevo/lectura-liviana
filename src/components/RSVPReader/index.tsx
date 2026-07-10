@@ -24,7 +24,8 @@ const DEFAULT_TEXT = "Bienvenido a tu espacio de lectura rápida. Un lugar cáli
 
 export default function RSVPReader() {
   // Preferences (localStorage)
-  const { wpm, setWpm, useDyslexicFont, setUseDyslexicFont, skipWords, setSkipWords, text, setText } = usePreferences(DEFAULT_TEXT);
+  const { wpm, setWpm, readingFont, setReadingFont, skipWords, setSkipWords, text, setText } = usePreferences(DEFAULT_TEXT);
+  const useDyslexicFont = readingFont === 'opendyslexic';
 
   // UI state
   const [showControls, setShowControls] = useState(true);
@@ -251,52 +252,6 @@ export default function RSVPReader() {
 
   return (
     <>
-      <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
-
-        @font-face {
-          font-family: 'OpenDyslexic';
-          src: url('/fonts/OpenDyslexic-Regular.otf') format('opentype');
-          font-weight: normal;
-          font-style: normal;
-          font-display: swap;
-        }
-
-        .font-dyslexic {
-          font-family: ${theme.fonts.dyslexic} !important;
-          letter-spacing: 0.05em;
-        }
-
-        .slider-warm {
-          -webkit-appearance: none;
-          appearance: none;
-          width: 100%;
-          height: 4px;
-          background: ${theme.colors.accentSubtle};
-          border-radius: 5px;
-          outline: none;
-        }
-
-        .slider-warm::-webkit-slider-thumb {
-          -webkit-appearance: none;
-          appearance: none;
-          width: 20px;
-          height: 20px;
-          background: ${theme.colors.accent};
-          cursor: pointer;
-          border-radius: 50%;
-        }
-
-        .slider-warm::-moz-range-thumb {
-          width: 20px;
-          height: 20px;
-          background: ${theme.colors.accent};
-          cursor: pointer;
-          border-radius: 50%;
-          border: none;
-        }
-      `}</style>
-
       <div
         className={`h-screen overflow-hidden ${useDyslexicFont ? 'font-dyslexic' : ''}`}
         onTouchStart={handleTouchStart}
@@ -307,6 +262,9 @@ export default function RSVPReader() {
           color: theme.colors.text,
         }}
       >
+        {/* Halo de vela + viñeta (estático, no cuesta nada por tick) */}
+        <div className="candle-scene" aria-hidden="true" />
+
         {/* Notificación flotante */}
         <NotificationToast message={notification} />
 
@@ -451,7 +409,7 @@ export default function RSVPReader() {
           text={text}
           wpm={wpm}
           skipWords={skipWords}
-          useDyslexicFont={useDyslexicFont}
+          readingFont={readingFont}
           urlInput={urlInput}
           isLoadingUrl={isLoadingUrl}
           epubProgress={epubProgress}
@@ -464,7 +422,7 @@ export default function RSVPReader() {
           onTextChange={setText}
           onWpmChange={setWpm}
           onSkipWordsChange={setSkipWords}
-          onDyslexicFontChange={setUseDyslexicFont}
+          onReadingFontChange={setReadingFont}
           onUrlInputChange={setUrlInput}
           onUrlLoad={loadFromUrl}
           onFileLoad={loadFromFile}

@@ -67,15 +67,15 @@ export default function WordDisplay({ currentIndex, wordParts, wordType, progres
               <span
                 style={{
                   fontSize: `calc(clamp(3rem, 8vw, 6rem) * ${visualStyle.sizeMultiplier})`,
-                  fontWeight: wordType.startsWith('h') ? '400' : '300',
+                  fontWeight: wordType.startsWith('h') ? '700' : '400',
                   letterSpacing: '0.05em',
                   filter: `brightness(${visualStyle.brightnessMultiplier})`,
-                  transition: 'all 0.2s ease',
+                  textShadow: '0 0 32px rgba(244, 162, 97, 0.22)',
                 }}
               >
-                <span style={{ color: `rgba(252, 211, 77, ${0.6 * visualStyle.brightnessMultiplier})` }}>{wordParts.pre}</span>
-                <span style={{ color: `rgba(252, 211, 77, ${Math.min(1, 0.8 * visualStyle.brightnessMultiplier)})`, fontWeight: '400' }}>{wordParts.focal}</span>
-                <span style={{ color: `rgba(252, 211, 77, ${0.6 * visualStyle.brightnessMultiplier})` }}>{wordParts.post}</span>
+                <span style={{ color: 'var(--word-prepost)' }}>{wordParts.pre}</span>
+                <span style={{ color: 'var(--word-focal)', fontWeight: '700' }}>{wordParts.focal}</span>
+                <span style={{ color: 'var(--word-prepost)' }}>{wordParts.post}</span>
               </span>
             </motion.div>
           </AnimatePresence>
@@ -88,7 +88,7 @@ export default function WordDisplay({ currentIndex, wordParts, wordType, progres
             maxWidth: '28rem',
             marginTop: '2rem',
             height: '2px',
-            backgroundColor: 'rgba(180, 83, 9, 0.2)',
+            backgroundColor: 'var(--border)',
             borderRadius: '1px',
           }}
         >
@@ -96,7 +96,7 @@ export default function WordDisplay({ currentIndex, wordParts, wordType, progres
             key={isRestarting ? 'restart' : 'progress'}
             style={{
               height: '100%',
-              backgroundColor: 'rgba(251, 191, 36, 0.6)',
+              backgroundColor: 'var(--accent-muted)',
               borderRadius: '1px',
             }}
             initial={isRestarting ? { width: '0%' } : false}

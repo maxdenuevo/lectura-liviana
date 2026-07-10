@@ -6,64 +6,50 @@
  */
 
 export const theme = {
+  // Los valores viven como CSS variables en globals.css (única fuente de verdad).
   colors: {
-    // Primary candlelight palette
-    candleBlack: '#0a0908',
-    candleDark: '#22201c',
-    candleAmber: '#f4a261',
-    candleCream: '#fefae0',
-
-    // Stone tones (current implementation)
-    stone900: '#1c1917',
-    stone200: '#e7e5e4',
-    stone800: '#292524',
-
-    // Amber/Orange highlights
-    amber300: '#fcd34d',
-    amber400: '#fbbf24',
-    amber500: '#f59e0b',
-
-    // Orange accents
-    orange700: '#b45309',
-
     // Semantic colors
-    background: '#1c1917',
-    text: '#e7e5e4',
-    textMuted: 'rgba(231, 229, 228, 0.4)',
-    textSecondary: 'rgba(231, 229, 228, 0.6)',
-    textTertiary: 'rgba(231, 229, 228, 0.8)',
+    background: 'var(--bg)',
+    text: 'var(--text)',
+    textMuted: 'var(--text-muted)',
+    textSecondary: 'var(--text-secondary)',
+    textTertiary: 'var(--text-tertiary)',
 
     // Word display colors
-    wordFocal: '#fcd34d',
-    wordPrePost: 'rgba(252, 211, 77, 0.6)',
+    wordFocal: 'var(--word-focal)',
+    wordPrePost: 'var(--word-prepost)',
 
     // UI elements
-    accent: '#fbbf24',
-    accentMuted: 'rgba(251, 191, 36, 0.6)',
-    accentSubtle: 'rgba(251, 191, 36, 0.2)',
-    accentDim: 'rgba(251, 191, 36, 0.3)',
+    accent: 'var(--accent)',
+    accentSecondary: 'var(--accent-secondary)',
+    accentMuted: 'var(--accent-muted)',
+    accentSubtle: 'var(--accent-subtle)',
+    accentDim: 'var(--accent-dim)',
+    accentFaint: 'var(--accent-faint)',
 
-    border: 'rgba(180, 83, 9, 0.2)',
-    borderLight: 'rgba(180, 83, 9, 0.3)',
+    border: 'var(--border)',
+    borderLight: 'var(--border-light)',
 
     // Surfaces
-    surfaceDark: 'rgba(0, 0, 0, 0.3)',
-    surfaceDarker: 'rgba(0, 0, 0, 0.4)',
-    surfaceFloat: 'rgba(28, 25, 23, 0.7)',
-    surfaceFloatHover: 'rgba(28, 25, 23, 0.9)',
-    surfaceModal: 'rgba(28, 25, 23, 0.95)',
-    surfaceControls: 'rgba(28, 25, 23, 0.8)',
+    surface: 'var(--surface)',
+    surfaceDark: 'var(--surface-dark)',
+    surfaceDarker: 'var(--surface-darker)',
+    surfaceFloat: 'var(--surface-float)',
+    surfaceFloatHover: 'var(--surface-float-hover)',
+    surfaceModal: 'var(--surface-modal)',
+    surfaceControls: 'var(--surface-controls)',
 
     // Overlays
-    overlay: 'rgba(0, 0, 0, 0.6)',
-    notificationBg: 'rgba(28, 25, 23, 0.9)',
+    overlay: 'var(--overlay)',
+    notificationBg: 'var(--notification-bg)',
   },
 
   fonts: {
-    default: "'Inter', sans-serif",
-    dyslexic: "'OpenDyslexic', serif",
+    default: 'var(--font-reading), sans-serif',
+    dyslexic: "'OpenDyslexic', sans-serif",
+    // Atkinson Hyperlegible solo trae 400/700; los intermedios se sintetizan
     weights: {
-      light: 300,
+      light: 400,
       normal: 400,
       medium: 500,
       semibold: 600,
@@ -87,8 +73,8 @@ export const theme = {
   },
 
   shadows: {
-    glow: '0 0 10px rgba(244, 162, 97, 0.4)',
-    controls: '0 10px 25px rgba(180, 83, 9, 0.1)',
+    glow: '0 0 10px var(--glow)',
+    controls: '0 10px 25px rgba(0, 0, 0, 0.35)',
   },
 
   transitions: {

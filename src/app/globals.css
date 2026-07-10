@@ -1,24 +1,62 @@
 @import "tailwindcss";
 
-/* --- Fuentes y Tema Base --- */
+/* --- Fuentes --- */
+/* Sin preload: con font-display swap el navegador solo la descarga si el usuario activa OpenDyslexic */
 @font-face {
   font-family: 'OpenDyslexic';
-  src: url('/fonts/OpenDyslexic-Regular.otf') format('opentype');
+  src: url('/fonts/OpenDyslexic-Regular.woff2') format('woff2');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
 }
 
+/* --- Paleta candlelight: única fuente de verdad de color --- */
+/* theme.ts expone estos tokens como var(--...) para los inline styles */
 :root {
+  /* Base */
   --candle-black: #0a0908;
   --candle-dark: #22201c;
   --candle-amber: #f4a261;
   --candle-cream: #fefae0;
+
+  /* Semánticos */
+  --bg: var(--candle-black);
+  --text: var(--candle-cream);
+  /* Alphas pre-horneadas con contraste AA sobre --bg */
+  --text-tertiary: rgba(254, 250, 224, 0.88);
+  --text-secondary: rgba(254, 250, 224, 0.75);
+  --text-muted: rgba(254, 250, 224, 0.62);
+
+  --accent: var(--candle-amber);
+  --accent-secondary: rgba(244, 162, 97, 0.8);
+  --accent-muted: rgba(244, 162, 97, 0.65);
+  --accent-dim: rgba(244, 162, 97, 0.3);
+  --accent-subtle: rgba(244, 162, 97, 0.16);
+  --accent-faint: rgba(244, 162, 97, 0.1);
+
+  /* Palabra RSVP: la llama ilumina la letra focal */
+  --word-focal: #f6b17a;
+  --word-prepost: rgba(244, 162, 97, 0.78);
+
+  --border: rgba(244, 162, 97, 0.2);
+  --border-light: rgba(244, 162, 97, 0.32);
+
+  --surface: var(--candle-dark);
+  --surface-dark: rgba(0, 0, 0, 0.3);
+  --surface-darker: rgba(0, 0, 0, 0.4);
+  --surface-float: rgba(34, 32, 28, 0.7);
+  --surface-float-hover: rgba(34, 32, 28, 0.92);
+  --surface-modal: rgba(20, 18, 15, 0.97);
+  --surface-controls: rgba(34, 32, 28, 0.8);
+
+  --overlay: rgba(5, 4, 3, 0.7);
+  --notification-bg: rgba(34, 32, 28, 0.92);
+  --glow: rgba(244, 162, 97, 0.35);
 }
 
 html, body {
-  background-color: var(--candle-black);
-  color: var(--candle-cream);
+  background-color: var(--bg);
+  color: var(--text);
   min-height: 100vh;
   margin: 0;
   padding: 0;
@@ -29,6 +67,17 @@ html, body {
 .font-dyslexic {
   font-family: 'OpenDyslexic', sans-serif !important;
   letter-spacing: 0.05em;
+}
+
+/* --- Ambiente de vela: halo cálido tras la palabra + viñeta en los bordes --- */
+/* Estático (sin animación): cero costo por tick del lector */
+.candle-scene {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 55% 38% at 50% 48%, rgba(244, 162, 97, 0.07), transparent 70%),
+    radial-gradient(ellipse 120% 100% at 50% 50%, transparent 62%, rgba(0, 0, 0, 0.55) 100%);
 }
 
 /* --- Transiciones y Animaciones Globales --- */
@@ -54,7 +103,7 @@ html, body {
   appearance: none;
   width: 100%;
   height: 3px;
-  background: var(--candle-dark);
+  background: var(--surface);
   outline: none;
   border-radius: 3px;
 }
@@ -64,21 +113,21 @@ html, body {
   appearance: none;
   width: 18px;
   height: 18px;
-  background: var(--candle-amber);
+  background: var(--accent);
   cursor: pointer;
   border-radius: 50%;
-  border: 2px solid var(--candle-cream);
-  box-shadow: 0 0 10px rgba(244, 162, 97, 0.4);
+  border: 2px solid var(--text);
+  box-shadow: 0 0 10px var(--glow);
 }
 
 .slider-warm::-moz-range-thumb {
   width: 18px;
   height: 18px;
-  background: var(--candle-amber);
+  background: var(--accent);
   cursor: pointer;
   border-radius: 50%;
-  border: 2px solid var(--candle-cream);
-  box-shadow: 0 0 10px rgba(244, 162, 97, 0.4);
+  border: 2px solid var(--text);
+  box-shadow: 0 0 10px var(--glow);
 }
 
 /* Scrollbar minimalista */
@@ -87,11 +136,11 @@ html, body {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--candle-black);
+  background: var(--bg);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--candle-dark);
+  background: var(--surface);
   border-radius: 3px;
 }
 
@@ -108,7 +157,7 @@ html, body {
 }
 
 :focus-visible {
-  outline: 2px solid var(--candle-amber);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: 4px;
 }

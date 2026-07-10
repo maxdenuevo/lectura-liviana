@@ -54,10 +54,10 @@ export default function ControlBar({
               gap: '1.5rem',
               padding: '1rem 1.5rem',
               borderRadius: '9999px',
-              border: '1px solid rgba(180, 83, 9, 0.2)',
-              backgroundColor: 'rgba(28, 25, 23, 0.8)',
+              border: '1px solid var(--border)',
+              backgroundColor: 'var(--surface-controls)',
               backdropFilter: 'blur(12px)',
-              boxShadow: '0 10px 25px rgba(180, 83, 9, 0.1)',
+              boxShadow: '0 10px 25px var(--accent-faint)',
               pointerEvents: 'auto',
             }}
           >
@@ -65,14 +65,14 @@ export default function ControlBar({
               onClick={() => onAdjustSpeed(-25)}
               style={{
                 fontSize: '1.25rem',
-                color: 'rgba(231, 229, 228, 0.6)',
+                color: 'var(--text-secondary)',
                 backgroundColor: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
                 transition: 'color 0.2s ease',
               }}
-              onMouseEnter={(e) => e.currentTarget.style.color = '#e7e5e4'}
-              onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(231, 229, 228, 0.6)'}
+              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text)'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
             >
               −
             </button>
@@ -83,7 +83,7 @@ export default function ControlBar({
                 fontWeight: '300',
                 minWidth: '70px',
                 textAlign: 'center',
-                color: 'rgba(231, 229, 228, 0.8)',
+                color: 'var(--text-tertiary)',
               }}
             >
               {wpm} ppm
@@ -93,14 +93,14 @@ export default function ControlBar({
               onClick={() => onAdjustSpeed(25)}
               style={{
                 fontSize: '1.25rem',
-                color: 'rgba(231, 229, 228, 0.6)',
+                color: 'var(--text-secondary)',
                 backgroundColor: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
                 transition: 'color 0.2s ease',
               }}
-              onMouseEnter={(e) => e.currentTarget.style.color = '#e7e5e4'}
-              onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(231, 229, 228, 0.6)'}
+              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text)'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
             >
               +
             </button>
@@ -109,7 +109,7 @@ export default function ControlBar({
               style={{
                 width: '1px',
                 height: '1.5rem',
-                backgroundColor: 'rgba(180, 83, 9, 0.3)',
+                backgroundColor: 'var(--border-light)',
               }}
             />
 
@@ -117,14 +117,14 @@ export default function ControlBar({
               onClick={onTogglePlay}
               style={{
                 fontSize: '1.5rem',
-                color: 'rgba(231, 229, 228, 0.8)',
+                color: 'var(--text-tertiary)',
                 backgroundColor: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
                 transition: 'color 0.2s ease',
               }}
-              onMouseEnter={(e) => e.currentTarget.style.color = '#e7e5e4'}
-              onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(231, 229, 228, 0.8)'}
+              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text)'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-tertiary)'}
               aria-label={isPlaying ? 'Pausar' : 'Reproducir'}
             >
               {isPlaying ? '॥' : '▶'}
@@ -134,7 +134,7 @@ export default function ControlBar({
               style={{
                 width: '1px',
                 height: '1.5rem',
-                backgroundColor: 'rgba(180, 83, 9, 0.3)',
+                backgroundColor: 'var(--border-light)',
               }}
             />
 
@@ -142,14 +142,14 @@ export default function ControlBar({
               onClick={onRestart}
               style={{
                 fontSize: '1.25rem',
-                color: 'rgba(231, 229, 228, 0.6)',
+                color: 'var(--text-secondary)',
                 backgroundColor: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
                 transition: 'color 0.2s ease',
               }}
-              onMouseEnter={(e) => e.currentTarget.style.color = '#e7e5e4'}
-              onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(231, 229, 228, 0.6)'}
+              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text)'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
               aria-label="Reiniciar"
             >
               ↺
@@ -159,7 +159,7 @@ export default function ControlBar({
               style={{
                 width: '1px',
                 height: '1.5rem',
-                backgroundColor: 'rgba(180, 83, 9, 0.3)',
+                backgroundColor: 'var(--border-light)',
               }}
             />
 
@@ -167,14 +167,14 @@ export default function ControlBar({
               onClick={onSkipBackward}
               style={{
                 fontSize: '1.25rem',
-                color: 'rgba(231, 229, 228, 0.6)',
+                color: 'var(--text-secondary)',
                 backgroundColor: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
                 transition: 'color 0.2s ease',
               }}
-              onMouseEnter={(e) => e.currentTarget.style.color = '#e7e5e4'}
-              onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(231, 229, 228, 0.6)'}
+              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text)'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
               aria-label="Retroceder"
             >
               ←
@@ -184,14 +184,14 @@ export default function ControlBar({
               onClick={onSkipForward}
               style={{
                 fontSize: '1.25rem',
-                color: 'rgba(231, 229, 228, 0.6)',
+                color: 'var(--text-secondary)',
                 backgroundColor: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
                 transition: 'color 0.2s ease',
               }}
-              onMouseEnter={(e) => e.currentTarget.style.color = '#e7e5e4'}
-              onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(231, 229, 228, 0.6)'}
+              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text)'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
               aria-label="Adelantar"
             >
               →

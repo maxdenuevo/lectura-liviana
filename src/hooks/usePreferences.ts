@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 
+export type ReadingFont = 'atkinson' | 'opendyslexic';
+
 const DEFAULT_WPM = 300;
-const DEFAULT_DYSLEXIC = false;
+const DEFAULT_READING_FONT: ReadingFont = 'atkinson';
 const DEFAULT_SKIP_WORDS = 25;
 
 /**
@@ -10,7 +12,7 @@ const DEFAULT_SKIP_WORDS = 25;
  */
 export function usePreferences(defaultText: string) {
   const [wpm, setWpm] = useState(DEFAULT_WPM);
-  const [useDyslexicFont, setUseDyslexicFont] = useState(DEFAULT_DYSLEXIC);
+  const [readingFont, setReadingFont] = useState<ReadingFont>(DEFAULT_READING_FONT);
   const [skipWords, setSkipWords] = useState(DEFAULT_SKIP_WORDS);
   const [text, setText] = useState('');
   const [isLoaded, setIsLoaded] = useState(false);
@@ -20,12 +22,18 @@ export function usePreferences(defaultText: string) {
     try {
       const savedText = localStorage.getItem('savedText');
       const savedWpm = localStorage.getItem('savedWpm');
-      const savedDyslexic = localStorage.getItem('dyslexic');
       const savedSkipWords = localStorage.getItem('skipWords');
+
+      // Migración desde la preferencia booleana anterior ('dyslexic')
+      let savedFont = localStorage.getItem('readingFont');
+      if (!savedFont && localStorage.getItem('dyslexic') === 'true') {
+        savedFont = 'opendyslexic';
+        localStorage.removeItem('dyslexic');
+      }
 
       setText(savedText || defaultText);
       setWpm(savedWpm ? Number(savedWpm) : DEFAULT_WPM);
-      setUseDyslexicFont(savedDyslexic === 'true');
+      setReadingFont(savedFont === 'opendyslexic' ? 'opendyslexic' : DEFAULT_READING_FONT);
       setSkipWords(savedSkipWords ? Number(savedSkipWords) : DEFAULT_SKIP_WORDS);
       setIsLoaded(true);
     } catch (error) {
@@ -41,7 +49,7 @@ export function usePreferences(defaultText: string) {
 
     try {
       localStorage.setItem('savedWpm', wpm.toString());
-      localStorage.setItem('dyslexic', useDyslexicFont.toString());
+      localStorage.setItem('readingFont', readingFont);
       localStorage.setItem('skipWords', skipWords.toString());
 
       // Only save text if it's not the default
@@ -51,13 +59,13 @@ export function usePreferences(defaultText: string) {
     } catch (error) {
       console.error('No se pudo guardar en localStorage:', error);
     }
-  }, [wpm, useDyslexicFont, skipWords, text, isLoaded, defaultText]);
+  }, [wpm, readingFont, skipWords, text, isLoaded, defaultText]);
 
   return {
     wpm,
     setWpm,
-    useDyslexicFont,
-    setUseDyslexicFont,
+    readingFont,
+    setReadingFont,
     skipWords,
     setSkipWords,
     text,

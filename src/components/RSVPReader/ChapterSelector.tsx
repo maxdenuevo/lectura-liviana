@@ -42,7 +42,7 @@ export default function ChapterSelector({ chapters, onChapterSelect }: ChapterSe
               width: '100%',
               padding: '0.75rem 1rem',
               border: 'none',
-              borderBottom: '1px solid rgba(251, 191, 36, 0.1)',
+              borderBottom: '1px solid var(--accent-faint)',
               backgroundColor: 'transparent',
               color: theme.colors.text,
               cursor: 'pointer',
@@ -54,7 +54,7 @@ export default function ChapterSelector({ chapters, onChapterSelect }: ChapterSe
               gap: '0.75rem',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(251, 191, 36, 0.15)';
+              e.currentTarget.style.backgroundColor = 'var(--accent-subtle)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = 'transparent';
@@ -69,7 +69,7 @@ export default function ChapterSelector({ chapters, onChapterSelect }: ChapterSe
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderRadius: '0.25rem',
-                backgroundColor: 'rgba(251, 191, 36, 0.2)',
+                backgroundColor: 'var(--accent-subtle)',
                 color: theme.colors.accent,
                 fontSize: '0.75rem',
                 fontWeight: theme.fonts.weights.medium,
