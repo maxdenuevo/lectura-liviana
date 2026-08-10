@@ -21,6 +21,7 @@ const shortcuts: Shortcut[] = [
   { keys: ['Shift+←', 'Shift+→'], description: 'Salto grande', category: 'desktop' },
   { keys: ['↑', '↓'], description: 'Ajustar velocidad (±25 ppm)', category: 'desktop' },
   { keys: ['C'], description: 'Abrir/Cerrar configuración', category: 'desktop' },
+  { keys: ['M'], description: 'Cambiar modo (palabra a palabra / guiado)', category: 'desktop' },
   { keys: ['Esc'], description: 'Pausar lectura / Cerrar menús', category: 'desktop' },
   { keys: ['?'], description: 'Mostrar esta ayuda', category: 'desktop' },
   { keys: ['Tap'], description: 'Iniciar/Pausar lectura', category: 'mobile' },

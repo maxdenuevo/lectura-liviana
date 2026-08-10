@@ -12,4 +12,13 @@ export interface EnrichedWord {
   text: string;
   type: WordType;
   sectionTitle?: string; // For breadcrumbs (optional future feature)
+  /**
+   * Bloque de origen (párrafo, título, ítem de lista). El RSVP no lo usa, pero
+   * el modo guiado reconstruye los párrafos agrupando palabras consecutivas que
+   * comparten este valor. No es correlativo: solo importa que cambie entre bloques.
+   */
+  blockIndex: number;
 }
+
+/** rsvp = una palabra centrada; guided = texto en flujo con foco móvil */
+export type ReadingMode = 'rsvp' | 'guided';

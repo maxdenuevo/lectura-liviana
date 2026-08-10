@@ -4,6 +4,7 @@ import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react'
 import NotificationToast, { type NotificationType } from './NotificationToast';
 import EmptyState from './EmptyState';
 import WordDisplay from './WordDisplay';
+import GuidedDisplay from './GuidedDisplay';
 import ControlBar from './ControlBar';
 import ConfigModal from './ConfigModal';
 import ShortcutsHelp from './ShortcutsHelp';
@@ -11,7 +12,7 @@ import FirstVisitHints from './FirstVisitHints';
 import GestureFeedback from './GestureFeedback';
 import ScreenReaderAnnouncer from './ScreenReaderAnnouncer';
 import LibraryView from '@/components/Library/LibraryView';
-import { WordParts, EnrichedWord } from './types';
+import { WordParts, EnrichedWord, type ReadingMode } from './types';
 import { usePreferences } from '@/hooks/usePreferences';
 import { useRSVPEngine } from '@/hooks/useRSVPEngine';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
@@ -53,7 +54,14 @@ const formatTime = (seconds: number) => {
 
 export default function RSVPReader() {
   // Preferences (localStorage)
-  const { wpm, setWpm, readingFont, setReadingFont, arrowStep, setArrowStep, jumpWords, setJumpWords } = usePreferences();
+  const {
+    wpm, setWpm,
+    readingFont, setReadingFont,
+    arrowStep, setArrowStep,
+    jumpWords, setJumpWords,
+    readingMode, setReadingMode,
+    chunkSize, setChunkSize,
+  } = usePreferences();
   const useDyslexicFont = readingFont === 'opendyslexic';
 
   // Texto activo (viene de la biblioteca o del textarea) y posición de reanudación
@@ -211,6 +219,15 @@ export default function RSVPReader() {
     setShowControls(true);
   }, [engineRestart, showNotification]);
 
+  // Ambos modos comparten currentIndex, así que alternar no pierde el punto
+  const toggleReadingMode = useCallback(() => {
+    const next: ReadingMode = readingMode === 'guided' ? 'rsvp' : 'guided';
+    setReadingMode(next);
+    showNotification(next === 'guided' ? 'Modo guiado' : 'Palabra a palabra');
+    setSrAnnouncement(next === 'guided' ? 'Modo de lectura guiada' : 'Modo palabra a palabra');
+    showControlsTemporarily();
+  }, [readingMode, setReadingMode, showNotification, showControlsTemporarily]);
+
   const adjustSpeed = useCallback((delta: number, showGesture = false) => {
     setWpm(prevWpm => {
       const newWpm = Math.max(100, Math.min(1000, prevWpm + delta));
@@ -329,6 +346,7 @@ export default function RSVPReader() {
       setShowLibrary(false);
     },
     onShowHelp: () => setShowHelp(prev => !prev),
+    onToggleMode: toggleReadingMode,
     isModalOpen: showConfig || showHelp || showLibrary,
   });
 
@@ -578,6 +596,13 @@ export default function RSVPReader() {
         {/* Área de lectura principal */}
         {isLibraryLoaded && words.length === 0 ? (
           <EmptyState onOpenLibrary={openLibrary} onOpenConfig={openConfig} />
+        ) : readingMode === 'guided' ? (
+          <GuidedDisplay
+            words={words}
+            currentIndex={currentIndex}
+            chunkSize={chunkSize}
+            progress={progress}
+          />
         ) : (
           <WordDisplay
             currentIndex={currentIndex}
@@ -609,6 +634,8 @@ export default function RSVPReader() {
           arrowStep={arrowStep}
           jumpWords={jumpWords}
           readingFont={readingFont}
+          readingMode={readingMode}
+          chunkSize={chunkSize}
           urlInput={urlInput}
           isLoadingUrl={isLoadingUrl}
           epubProgress={epubProgress}
@@ -625,6 +652,8 @@ export default function RSVPReader() {
           onArrowStepChange={setArrowStep}
           onJumpWordsChange={setJumpWords}
           onReadingFontChange={setReadingFont}
+          onReadingModeChange={setReadingMode}
+          onChunkSizeChange={setChunkSize}
           onUrlInputChange={setUrlInput}
           onUrlLoad={loadFromUrl}
           onFileLoad={loadFromFile}

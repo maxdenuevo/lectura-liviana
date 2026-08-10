@@ -86,7 +86,7 @@ export function useRSVPEngine({ words, wpm, initialIndex = 0, onComplete }: RSVP
   }, [words.length, currentIndex, wpm]);
 
   // Get current word and type
-  const currentWordObj = words[currentIndex] || { text: '', type: 'normal' as WordType };
+  const currentWordObj = words[currentIndex] || { text: '', type: 'normal' as WordType, blockIndex: 0 };
   const currentWord = currentWordObj.text;
   const currentWordType = currentWordObj.type;
 

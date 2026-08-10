@@ -13,6 +13,8 @@ interface KeyboardShortcutsConfig {
   onToggleConfig: () => void;
   onCloseConfig: () => void;
   onShowHelp?: () => void;
+  /** Alterna entre RSVP y lectura guiada */
+  onToggleMode?: () => void;
   isModalOpen?: boolean; // Track if any modal is open
 }
 
@@ -27,6 +29,7 @@ interface KeyboardShortcutsConfig {
  * - Arrow Up: Increase speed
  * - Arrow Down: Decrease speed
  * - C: Toggle config
+ * - M: Toggle reading mode (RSVP / guiado)
  * - Escape: Close config (if open) or Pause reading
  * - ?: Show help
  */
@@ -42,6 +45,7 @@ export function useKeyboardShortcuts({
   onToggleConfig,
   onCloseConfig,
   onShowHelp,
+  onToggleMode,
   isModalOpen = false,
 }: KeyboardShortcutsConfig) {
   useEffect(() => {
@@ -98,6 +102,11 @@ export function useKeyboardShortcuts({
           e.preventDefault();
           onToggleConfig();
           break;
+        case 'm':
+        case 'M':
+          e.preventDefault();
+          onToggleMode?.();
+          break;
         case '?':
           e.preventDefault();
           onShowHelp?.();
@@ -110,5 +119,5 @@ export function useKeyboardShortcuts({
     return () => {
       window.removeEventListener('keydown', handleKeyPress);
     };
-  }, [onTogglePlay, onRestart, onSpeedUp, onSpeedDown, onSkipForward, onSkipBackward, onSkipForwardBig, onSkipBackwardBig, onToggleConfig, onCloseConfig, onShowHelp, isModalOpen]);
+  }, [onTogglePlay, onRestart, onSpeedUp, onSpeedDown, onSkipForward, onSkipBackward, onSkipForwardBig, onSkipBackwardBig, onToggleConfig, onCloseConfig, onShowHelp, onToggleMode, isModalOpen]);
 }

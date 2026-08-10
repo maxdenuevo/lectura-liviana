@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { type ReadingMode } from '@/components/RSVPReader/types';
+import { MAX_CHUNK_SIZE, MIN_CHUNK_SIZE } from '@/lib/guidedChunks';
 
 export type ReadingFont = 'atkinson' | 'opendyslexic';
 
@@ -7,6 +9,9 @@ const DEFAULT_READING_FONT: ReadingFont = 'atkinson';
 // Retroceso fino con ←→ (releer una frase) vs salto grande con Shift+←→
 const DEFAULT_ARROW_STEP = 3;
 const DEFAULT_JUMP_WORDS = 25;
+const DEFAULT_READING_MODE: ReadingMode = 'rsvp';
+// 3 palabras: suficiente para agrupar sin exceder el golpe de vista
+const DEFAULT_CHUNK_SIZE = 3;
 
 /**
  * Custom hook to manage user preferences with localStorage persistence.
@@ -17,6 +22,8 @@ export function usePreferences() {
   const [readingFont, setReadingFont] = useState<ReadingFont>(DEFAULT_READING_FONT);
   const [arrowStep, setArrowStep] = useState(DEFAULT_ARROW_STEP);
   const [jumpWords, setJumpWords] = useState(DEFAULT_JUMP_WORDS);
+  const [readingMode, setReadingMode] = useState<ReadingMode>(DEFAULT_READING_MODE);
+  const [chunkSize, setChunkSize] = useState(DEFAULT_CHUNK_SIZE);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Load preferences on mount
@@ -40,10 +47,19 @@ export function usePreferences() {
         localStorage.removeItem('skipWords');
       }
 
+      const savedMode = localStorage.getItem('readingMode');
+      const savedChunkSize = Number(localStorage.getItem('chunkSize'));
+
       setWpm(savedWpm ? Number(savedWpm) : DEFAULT_WPM);
       setReadingFont(savedFont === 'opendyslexic' ? 'opendyslexic' : DEFAULT_READING_FONT);
       setArrowStep(savedArrowStep ? Number(savedArrowStep) : DEFAULT_ARROW_STEP);
       setJumpWords(savedJumpWords ? Number(savedJumpWords) : DEFAULT_JUMP_WORDS);
+      setReadingMode(savedMode === 'guided' ? 'guided' : DEFAULT_READING_MODE);
+      setChunkSize(
+        savedChunkSize >= MIN_CHUNK_SIZE && savedChunkSize <= MAX_CHUNK_SIZE
+          ? savedChunkSize
+          : DEFAULT_CHUNK_SIZE
+      );
     } catch (error) {
       console.error('No se pudo acceder a localStorage:', error);
     } finally {
@@ -60,10 +76,12 @@ export function usePreferences() {
       localStorage.setItem('readingFont', readingFont);
       localStorage.setItem('arrowStep', arrowStep.toString());
       localStorage.setItem('jumpWords', jumpWords.toString());
+      localStorage.setItem('readingMode', readingMode);
+      localStorage.setItem('chunkSize', chunkSize.toString());
     } catch (error) {
       console.error('No se pudo guardar en localStorage:', error);
     }
-  }, [wpm, readingFont, arrowStep, jumpWords, isLoaded]);
+  }, [wpm, readingFont, arrowStep, jumpWords, readingMode, chunkSize, isLoaded]);
 
   return {
     wpm,
@@ -74,6 +92,10 @@ export function usePreferences() {
     setArrowStep,
     jumpWords,
     setJumpWords,
+    readingMode,
+    setReadingMode,
+    chunkSize,
+    setChunkSize,
     isLoaded,
   };
 }

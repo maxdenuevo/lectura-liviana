@@ -2,13 +2,14 @@ import React, { memo } from 'react';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { type ReadingFont } from '@/hooks/usePreferences';
-import { EnrichedWord } from './types';
+import { EnrichedWord, type ReadingMode } from './types';
 import { type EpubBook } from '@/lib/epubParser';
 import EpubMetadataPreview from './EpubMetadataPreview';
 import ChapterSelector from './ChapterSelector';
 import TextSourcePanel from './config/TextSourcePanel';
 import SpeedControls from './config/SpeedControls';
 import FontSelector from './config/FontSelector';
+import ReadingModeSelector from './config/ReadingModeSelector';
 import ReadingStats from './config/ReadingStats';
 
 interface ConfigModalProps {
@@ -18,6 +19,8 @@ interface ConfigModalProps {
   arrowStep: number;
   jumpWords: number;
   readingFont: ReadingFont;
+  readingMode: ReadingMode;
+  chunkSize: number;
   urlInput: string;
   isLoadingUrl: boolean;
   epubProgress: number;
@@ -34,6 +37,8 @@ interface ConfigModalProps {
   onArrowStepChange: (count: number) => void;
   onJumpWordsChange: (count: number) => void;
   onReadingFontChange: (font: ReadingFont) => void;
+  onReadingModeChange: (mode: ReadingMode) => void;
+  onChunkSizeChange: (size: number) => void;
   onUrlInputChange: (url: string) => void;
   onUrlLoad: () => void;
   onFileLoad: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -49,6 +54,8 @@ function ConfigModal({
   arrowStep,
   jumpWords,
   readingFont,
+  readingMode,
+  chunkSize,
   urlInput,
   isLoadingUrl,
   epubProgress,
@@ -64,6 +71,8 @@ function ConfigModal({
   onArrowStepChange,
   onJumpWordsChange,
   onReadingFontChange,
+  onReadingModeChange,
+  onChunkSizeChange,
   onUrlInputChange,
   onUrlLoad,
   onFileLoad,
@@ -171,6 +180,13 @@ function ConfigModal({
                   onFileLoad={onFileLoad}
                 />
 
+                <ReadingModeSelector
+                  readingMode={readingMode}
+                  chunkSize={chunkSize}
+                  onReadingModeChange={onReadingModeChange}
+                  onChunkSizeChange={onChunkSizeChange}
+                />
+
                 <SpeedControls
                   wpm={wpm}
                   arrowStep={arrowStep}
@@ -227,6 +243,7 @@ function ConfigModal({
                       <div><strong style={{ color: 'var(--text-muted)' }}>Shift+↔</strong> salto grande</div>
                       <div><strong style={{ color: 'var(--text-muted)' }}>↕</strong> velocidad</div>
                       <div><strong style={{ color: 'var(--text-muted)' }}>C</strong> config</div>
+                      <div><strong style={{ color: 'var(--text-muted)' }}>M</strong> cambiar de modo</div>
                       <div><strong style={{ color: 'var(--text-muted)' }}>Esc</strong> pausar/cerrar</div>
                     </div>
                   </div>

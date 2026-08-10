@@ -1,23 +1,44 @@
 .
 ├── public
 │   ├── fonts
-│   │   └── OpenDyslexic-Regular.otf
-│   ├── file.svg
-│   ├── globe.svg
-│   ├── next.svg
-│   ├── vercel.svg
-│   └── window.svg
+│   │   └── OpenDyslexic-Regular.woff2
+│   ├── icons
+│   │   ├── icon-192.png
+│   │   ├── icon-512.png
+│   │   └── icon-maskable-512.png
+│   └── sw.js
 ├── src
 │   ├── app
 │   │   ├── api
+│   │   ├── error.tsx
 │   │   ├── favicon.ico
 │   │   ├── globals.css
 │   │   ├── layout.tsx
-│   │   └── page.tsx
+│   │   ├── manifest.ts
+│   │   ├── page.tsx
+│   │   └── sw.ts
 │   ├── components
-│   │   └── RSVPReader.tsx
+│   │   ├── Library
+│   │   └── RSVPReader
+│   ├── hooks
+│   │   ├── useBodyScrollLock.ts
+│   │   ├── useFocusTrap.ts
+│   │   ├── useKeyboardShortcuts.ts
+│   │   ├── useLibrary.ts
+│   │   ├── usePreferences.ts
+│   │   ├── useReadingProgress.ts
+│   │   ├── useRSVPEngine.ts
+│   │   ├── useTextLoader.ts
+│   │   └── useTouchGestures.ts
 │   └── lib
-│       └── utils.ts
+│       ├── db.ts
+│       ├── epubParser.ts
+│       ├── htmlText.ts
+│       ├── textParser.ts
+│       └── theme.ts
+├── eslint.config.mjs
+├── example-html.html
+├── example-markdown.md
 ├── next-env.d.ts
 ├── next.config.ts
 ├── package-lock.json
@@ -26,6 +47,7 @@
 ├── README.md
 ├── structure.txt
 ├── tailwind.config.ts
-└── tsconfig.json
+├── tsconfig.json
+└── tsconfig.tsbuildinfo
 
-8 directories, 21 files
+12 directories, 39 files

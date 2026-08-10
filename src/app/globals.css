@@ -208,3 +208,36 @@ button {
 .word-in {
   animation: word-in 0.1s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
+
+/* --- Modo guiado: foco de vela sobre texto en flujo --- */
+/* La luz cae sobre el grupo activo; el resto queda en penumbra legible. */
+.guided-viewport {
+  /* El texto se desvanece en los bordes en vez de cortarse en seco */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 15%, #000 74%, transparent 92%);
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 15%, #000 74%, transparent 92%);
+}
+
+.guided-track {
+  font-size: clamp(1.1rem, 2.4vw, 1.5rem);
+  line-height: 1.9;
+  letter-spacing: 0.01em;
+  text-wrap: pretty;
+  user-select: none;
+  will-change: transform;
+}
+
+.guided-word {
+  opacity: 0.2;
+  transition: opacity 200ms ease, color 200ms ease, text-shadow 200ms ease;
+}
+
+/* Resto del párrafo enfocado: da contexto sin competir con la luz */
+.guided-word--near {
+  opacity: 0.42;
+}
+
+.guided-word--on {
+  opacity: 1;
+  color: var(--word-focal);
+  text-shadow: 0 0 26px rgba(244, 162, 97, 0.42);
+}

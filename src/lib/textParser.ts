@@ -21,7 +21,15 @@ interface ParsedSegment {
   text: string;
   type: WordType;
   sectionTitle?: string;
+  blockIndex: number;
 }
+
+/** Tags que abren un bloque visual propio (párrafo, título, ítem, cita…) */
+const BLOCK_TAGS = new Set([
+  'p', 'div', 'section', 'article',
+  'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+  'ul', 'ol', 'li', 'blockquote', 'pre',
+]);
 
 /**
  * Detect if text contains HTML tags
@@ -61,6 +69,10 @@ function parseHTML(html: string): ParsedSegment[] {
   const container = document.createElement('div');
   container.innerHTML = sanitizedHtml;
 
+  // Bloque actual: los tags inline (code, em…) heredan el del bloque que los contiene
+  let blockCounter = 0;
+  let currentBlock = 0;
+
   // Walk through DOM nodes
   function walkNode(node: Node, inherited: WordType = 'normal') {
     if (node.nodeType === Node.TEXT_NODE) {
@@ -70,29 +82,45 @@ function parseHTML(html: string): ParsedSegment[] {
           text,
           type: inherited,
           sectionTitle: lastSectionTitle,
+          blockIndex: currentBlock,
         });
       }
-    } else if (node.nodeType === Node.ELEMENT_NODE) {
-      const element = node as Element;
-      const tagName = element.tagName.toLowerCase();
-
-      let nodeType: WordType = inherited;
-
-      // Determine type based on tag
-      if (tagName.match(/^h[1-6]$/)) {
-        nodeType = tagName as WordType;
-        lastSectionTitle = element.textContent?.trim();
-      } else if (tagName === 'li') {
-        nodeType = 'list-item';
-      } else if (tagName === 'code' || tagName === 'pre') {
-        nodeType = 'code';
-      } else if (tagName === 'blockquote') {
-        nodeType = 'blockquote';
-      }
-
-      // Recurse through children
-      node.childNodes.forEach(child => walkNode(child, nodeType));
+      return;
     }
+
+    if (node.nodeType !== Node.ELEMENT_NODE) return;
+
+    const element = node as Element;
+    const tagName = element.tagName.toLowerCase();
+
+    // <br> corta el bloque sin contener nada
+    if (tagName === 'br') {
+      currentBlock = ++blockCounter;
+      return;
+    }
+
+    let nodeType: WordType = inherited;
+
+    // Determine type based on tag
+    if (tagName.match(/^h[1-6]$/)) {
+      nodeType = tagName as WordType;
+      lastSectionTitle = element.textContent?.trim();
+    } else if (tagName === 'li') {
+      nodeType = 'list-item';
+    } else if (tagName === 'code' || tagName === 'pre') {
+      nodeType = 'code';
+    } else if (tagName === 'blockquote') {
+      nodeType = 'blockquote';
+    }
+
+    const isBlock = BLOCK_TAGS.has(tagName);
+    if (isBlock) currentBlock = ++blockCounter;
+
+    // Recurse through children
+    node.childNodes.forEach(child => walkNode(child, nodeType));
+
+    // El texto que siga a un bloque arranca uno nuevo (HTML mal anidado incluido)
+    if (isBlock) currentBlock = ++blockCounter;
   }
 
   container.childNodes.forEach(node => walkNode(node));
@@ -122,6 +150,8 @@ function parseMarkdown(markdown: string): ParsedSegment[] {
   const segments: ParsedSegment[] = [];
   const lines = markdown.split('\n');
   let lastSectionTitle: string | undefined;
+  // Cada línea no vacía es su propio bloque visual
+  let blockCounter = 0;
 
   for (const line of lines) {
     const trimmedLine = line.trim();
@@ -137,6 +167,7 @@ function parseMarkdown(markdown: string): ParsedSegment[] {
         text,
         type: `h${level}` as WordType,
         sectionTitle: lastSectionTitle,
+        blockIndex: blockCounter++,
       });
       continue;
     }
@@ -148,6 +179,7 @@ function parseMarkdown(markdown: string): ParsedSegment[] {
         text: cleanInlineMarkdown(listMatch[1]),
         type: 'list-item',
         sectionTitle: lastSectionTitle,
+        blockIndex: blockCounter++,
       });
       continue;
     }
@@ -159,6 +191,7 @@ function parseMarkdown(markdown: string): ParsedSegment[] {
         text: cleanInlineMarkdown(blockquoteMatch[1]),
         type: 'blockquote',
         sectionTitle: lastSectionTitle,
+        blockIndex: blockCounter++,
       });
       continue;
     }
@@ -169,6 +202,7 @@ function parseMarkdown(markdown: string): ParsedSegment[] {
       text: cleanedText,
       type: 'normal',
       sectionTitle: lastSectionTitle,
+      blockIndex: blockCounter++,
     });
   }
 
@@ -189,6 +223,7 @@ function segmentsToEnrichedWords(segments: ParsedSegment[]): EnrichedWord[] {
         text: word,
         type: segment.type,
         sectionTitle: segment.sectionTitle,
+        blockIndex: segment.blockIndex,
       });
     }
   }
@@ -225,17 +260,22 @@ export function parseText(text: string): EnrichedWord[] {
 }
 
 /**
- * Fallback: Convert plain text (space-separated words) to enriched words
+ * Fallback: Convert plain text to enriched words.
+ * Cada línea es un bloque, para que el modo guiado conserve los párrafos
+ * incluso en el camino de emergencia (texto >1MB o parseo fallido).
  */
 export function parseSimpleText(text: string): EnrichedWord[] {
-  return text
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .map(word => ({
-      text: word,
-      type: 'normal' as WordType,
-    }));
+  const enrichedWords: EnrichedWord[] = [];
+
+  text.trim().split(/\n+/).forEach((line, blockIndex) => {
+    for (const word of line.trim().split(/\s+/)) {
+      if (word) {
+        enrichedWords.push({ text: word, type: 'normal' as WordType, blockIndex });
+      }
+    }
+  });
+
+  return enrichedWords;
 }
 
 /**
