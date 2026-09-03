@@ -66,16 +66,21 @@ Está pensado para notas de Obsidian: entiende frontmatter YAML, `[[wikilinks]]`
 
 - `Barra Espaciadora`: Iniciar/Pausar la lectura
 - `R`: Reiniciar desde el principio
-- `←/→`: Disminuir/Aumentar velocidad (±25 PPM)
+- `←/→`: Retroceso/Avance fino
+- `Shift+←/→`: Salto grande
+- `↑/↓`: Ajustar velocidad (±25 PPM)
 - `C`: Abrir/Cerrar configuración
+- `M`: Cambiar modo (palabra a palabra / guiado)
 - `Escape`: Pausar lectura / Cerrar menús
 - `?`: Mostrar ayuda de atajos de teclado
+- `Doble click` en espacio vacío: Pantalla completa
 
 **Gestos Táctiles (Móvil):**
 
 - **Tap**: Iniciar/Pausar
-- **Swipe horizontal**: Ajustar velocidad
-- **Swipe vertical**: Abrir configuración
+- **Doble tap**: Abrir configuración
+- **Swipe horizontal**: Salto grande adelante/atrás
+- **Swipe vertical**: Ajustar velocidad
 
 ## Seguridad
 

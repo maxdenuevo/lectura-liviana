@@ -24,6 +24,7 @@ const shortcuts: Shortcut[] = [
   { keys: ['M'], description: 'Cambiar modo (palabra a palabra / guiado)', category: 'desktop' },
   { keys: ['Esc'], description: 'Pausar lectura / Cerrar menús', category: 'desktop' },
   { keys: ['?'], description: 'Mostrar esta ayuda', category: 'desktop' },
+  { keys: ['Doble click'], description: 'Pantalla completa (en espacio vacío)', category: 'desktop' },
   { keys: ['Tap'], description: 'Iniciar/Pausar lectura', category: 'mobile' },
   { keys: ['Doble tap'], description: 'Abrir configuración', category: 'mobile' },
   { keys: ['Swipe →', 'Swipe ←'], description: 'Salto grande adelante/atrás', category: 'mobile' },

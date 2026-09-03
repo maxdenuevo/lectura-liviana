@@ -21,6 +21,7 @@ import { useTextLoader } from '@/hooks/useTextLoader';
 import { useLibrary } from '@/hooks/useLibrary';
 import { useReadingProgress } from '@/hooks/useReadingProgress';
 import { theme } from '@/lib/theme';
+import { toggleFullscreen } from '@/lib/fullscreen';
 import { parseText, parseSimpleText } from '@/lib/textParser';
 import { type EpubBook } from '@/lib/epubParser';
 import { type StoredBook } from '@/lib/db';
@@ -420,12 +421,23 @@ export default function RSVPReader() {
     startAutoHideTimer();
   }, [startAutoHideTimer]);
 
+  // Doble click en espacio vacío (escritorio) alterna pantalla completa. En
+  // táctil el doble tap ya abre la configuración, así que solo con puntero fino.
+  const handleDoubleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+    const target = e.target as Element;
+    if (target.closest('button, a, input, textarea, select, label, [role="dialog"], .guided-word')) return;
+    window.getSelection()?.removeAllRanges();
+    void toggleFullscreen();
+  }, []);
+
   return (
     <>
       <div
         className={`h-screen overflow-hidden ${useDyslexicFont ? 'font-dyslexic' : ''}`}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
+        onDoubleClick={handleDoubleClick}
         style={{
           fontFamily: useDyslexicFont ? theme.fonts.dyslexic : theme.fonts.default,
           backgroundColor: theme.colors.background,
