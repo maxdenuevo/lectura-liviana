@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { Readability } from '@mozilla/readability';
 import { JSDOM } from 'jsdom';
+import { stripHtmlToText } from '@/lib/htmlText';
 
 interface ArticleResult {
   title: string;
@@ -326,40 +327,64 @@ export async function POST(request: Request) {
       }
     }
 
-    // Crear DOM y usar Readability
-    const dom = new JSDOM(htmlContent, { url });
-    const reader = new Readability(dom.window.document);
-    const article = reader.parse();
-    
     let result: ArticleResult;
 
-    if (article && article.textContent) {
-      // Limpiar y procesar el contenido
-      // Límite: 500K caracteres (~80K palabras, suficiente para libros completos)
-      const cleanContent = article.textContent
-        .replace(/\s+/g, ' ')
-        .replace(/\n{3,}/g, '\n\n')
-        .trim()
-        .slice(0, 500000);
-      
+    // Texto plano (p. ej. los .txt de Project Gutenberg): se entrega tal cual,
+    // con sus saltos de línea. Readability lo envolvería en un <div> y el
+    // cliente perdería los párrafos.
+    if (!/<[a-z][^>]*>/i.test(htmlContent)) {
+      const plain = htmlContent.replace(/\r\n?/g, '\n').replace(/\n{3,}/g, '\n\n').trim().slice(0, 500000);
+
+      if (plain.length < 100) {
+        return NextResponse.json({
+          error: 'No se pudo extraer contenido legible. Intenta copiar el texto directamente.',
+          success: false
+        }, { status: 422 });
+      }
+
+      // Título: primera línea con contenido, saltando los separadores de Gutenberg (*** START … ***)
+      const firstLine = plain.split('\n').map(line => line.trim()).find(line => line && !line.startsWith('***')) ?? '';
+      result = {
+        title: firstLine.slice(0, 120) || 'Texto sin título',
+        content: plain,
+        excerpt: plain.slice(0, 200).replace(/\s+/g, ' ') + '...',
+        length: plain.split(/\s+/).length,
+        success: true
+      };
+
+      cache.set(normalizedUrl, { data: result, timestamp: Date.now() });
+      return NextResponse.json(result, {
+        headers: { 'X-RateLimit-Remaining': rateLimitCheck.remaining.toString() }
+      });
+    }
+
+    // Crear DOM y usar Readability
+    const dom = new JSDOM(htmlContent, { url });
+    // Ruido que Readability deja pasar: enlaces "[editar]" de MediaWiki
+    dom.window.document.querySelectorAll('.mw-editsection').forEach(el => el.remove());
+    const reader = new Readability(dom.window.document);
+    const article = reader.parse();
+
+    if (article && article.content && article.textContent) {
+      // Se envía el HTML limpio de Readability, no el texto plano: el cliente
+      // conserva así párrafos, títulos, listas y negritas. Colapsar el
+      // whitespace del textContent dejaba el artículo en un solo párrafo.
+      // Límite: 500K caracteres (~60K palabras, suficiente para artículos largos)
+      const content = article.content.trim().slice(0, 500000);
+      const plainText = article.textContent.replace(/\s+/g, ' ').trim();
+
       result = {
         title: article.title || 'Artículo sin título',
-        content: cleanContent,
+        content,
         excerpt: article.excerpt || '',
         byline: article.byline || '',
-        length: cleanContent.split(/\s+/).length,
+        length: plainText.split(/\s+/).length,
         success: true
       };
     } else {
-      // Fallback: extracción básica
+      // Fallback: extracción básica conservando la separación de párrafos
       // Límite más conservador en fallback: 250K caracteres (~40K palabras)
-      const textContent = htmlContent
-        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-        .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
-        .replace(/<[^>]*>/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim()
-        .slice(0, 250000);
+      const textContent = stripHtmlToText(htmlContent).slice(0, 250000);
 
       if (!textContent || textContent.length < 100) {
         return NextResponse.json({
@@ -374,12 +399,12 @@ export async function POST(request: Request) {
       result = {
         title: titleMatch ? titleMatch[1].trim() : 'Contenido extraído',
         content: textContent,
-        excerpt: textContent.slice(0, 200) + '...',
+        excerpt: textContent.slice(0, 200).replace(/\s+/g, ' ') + '...',
         length: textContent.split(/\s+/).length,
         success: true
       };
     }
-    
+
     // Guardar en caché (usando URL normalizada)
     cache.set(normalizedUrl, {
       data: result,

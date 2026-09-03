@@ -16,7 +16,9 @@ if (typeof window !== 'undefined') {
 
 // Configuración de DOMPurify para permitir solo tags seguros necesarios para el parsing
 const ALLOWED_TAGS = [
-  'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'br',
+  'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'br', 'hr',
+  'div', 'section', 'article', 'main', 'header', 'footer', 'aside',
+  'figure', 'figcaption', 'table', 'tr', 'td', 'th', 'dl', 'dt', 'dd',
   'strong', 'b', 'em', 'i', 'cite', 'kbd',
 ];
 const ALLOWED_ATTR: string[] = []; // No necesitamos atributos
@@ -31,10 +33,14 @@ interface ParsedSegment {
 
 /** Tags que abren un bloque visual propio (párrafo, título, ítem, cita…) */
 const BLOCK_TAGS = new Set([
-  'p', 'div', 'section', 'article',
+  'p', 'div', 'section', 'article', 'main', 'header', 'footer', 'aside',
   'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-  'ul', 'ol', 'li', 'blockquote', 'pre',
+  'ul', 'ol', 'li', 'blockquote', 'pre', 'hr',
+  'figure', 'figcaption', 'table', 'tr', 'dl', 'dt', 'dd',
 ]);
+
+/** Celdas de tabla: van en línea dentro de la fila, separadas por un espacio */
+const SPACED_TAGS = new Set(['td', 'th']);
 
 const HTML_BOLD = new Set(['strong', 'b']);
 const HTML_ITALIC = new Set(['em', 'i', 'cite']);
@@ -165,6 +171,7 @@ function parseHTML(html: string): ParsedSegment[] {
 
     const isBlock = BLOCK_TAGS.has(tagName);
     if (isBlock) currentBlock = ++blockCounter;
+    if (SPACED_TAGS.has(tagName) && open) pushRun(' ', style.type, undefined);
 
     if (isInlineCode && style.type !== 'code') {
       // Código inline: mismo bloque, énfasis 'code'
