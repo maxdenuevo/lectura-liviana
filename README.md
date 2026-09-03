@@ -33,13 +33,24 @@ Incluye la fuente `OpenDyslexic` especialmente diseñada para personas con disle
 - **URLs**: Extrae automáticamente el contenido principal de artículos en línea
 - **Ejemplo integrado**: Prueba la herramienta con Frankenstein de Mary Shelley (dominio público)
 
+### **Dos Modos de Lectura**
+
+- **Palabra a palabra (RSVP)**: una palabra centrada con resaltado del punto focal
+- **Guiado**: el texto fluye en párrafos y un foco cálido avanza por grupos de 1 a 5 palabras, reduciendo las regresiones. Ambos modos comparten velocidad, posición y saltos.
+
+### **Biblioteca y Lectura sin Conexión**
+
+Los textos cargados se guardan en el navegador (IndexedDB) con su posición de lectura, para retomar donde quedaste. La app es instalable como PWA y funciona sin conexión.
+
 ### **Pausas Inteligentes**
 
 El lector añade pausas automáticas más largas para comas (1.3x), puntos y comas (1.5x), y puntos finales (2x), mejorando el ritmo natural y la comprensión.
 
 ### **Parsing Avanzado de Texto**
 
-Reconoce y procesa formato Markdown y HTML, eliminando automáticamente la sintaxis de marcado (negritas, itálicas, hipervínculos) para una lectura fluida sin distracciones.
+Reconoce Markdown y HTML y conserva su estructura: títulos, listas (con viñetas, numeradas y de tareas), citas, tablas y bloques de código. Los marcadores desaparecen del texto, pero el énfasis se mantiene: las **negritas**, *cursivas* y el `código` inline se muestran como tales, tanto en el modo palabra a palabra como en el guiado.
+
+Está pensado para notas de Obsidian: entiende frontmatter YAML, `[[wikilinks]]` con alias, embeds, `==resaltados==`, comentarios `%%` y callouts. Un `<br>` o un `<u>` sueltos en una nota no la convierten en HTML; solo se lee como documento HTML cuando hay tags de bloque reales.
 
 ### **Experiencia de Usuario Pulida**
 

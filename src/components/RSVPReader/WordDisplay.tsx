@@ -1,17 +1,18 @@
 import { memo, useEffect, useRef } from 'react';
-import { WordParts, WordType } from './types';
+import { Emphasis, WordParts, WordType } from './types';
 import { getVisualStyle } from '@/lib/textParser';
 
 interface WordDisplayProps {
   currentIndex: number;
   wordParts: WordParts;
   wordType: WordType;
+  emphasis?: Emphasis;
   progress: number;
 }
 
 // Hot path: se re-renderiza en cada palabra. Sin framer-motion — el remount
 // del div con key + @keyframes CSS anima la entrada a costo casi nulo.
-function WordDisplay({ currentIndex, wordParts, wordType, progress }: WordDisplayProps) {
+function WordDisplay({ currentIndex, wordParts, wordType, emphasis, progress }: WordDisplayProps) {
   const prevProgress = useRef(progress);
 
   // Detect restart (progress goes from high to low)
@@ -19,6 +20,8 @@ function WordDisplay({ currentIndex, wordParts, wordType, progress }: WordDispla
 
   // Get visual style based on word type
   const visualStyle = getVisualStyle(wordType);
+  const isBold = wordType.startsWith('h') || emphasis === 'bold' || emphasis === 'bold-italic';
+  const isItalic = emphasis === 'italic' || emphasis === 'bold-italic';
 
   useEffect(() => {
     prevProgress.current = progress;
@@ -59,7 +62,9 @@ function WordDisplay({ currentIndex, wordParts, wordType, progress }: WordDispla
             <span
               style={{
                 fontSize: `calc(clamp(3rem, 8vw, 6rem) * ${visualStyle.sizeMultiplier})`,
-                fontWeight: wordType.startsWith('h') ? '700' : '400',
+                fontWeight: isBold ? '700' : '400',
+                fontStyle: isItalic ? 'italic' : 'normal',
+                fontFamily: emphasis === 'code' ? 'ui-monospace, SFMono-Regular, Menlo, monospace' : undefined,
                 letterSpacing: '0.05em',
                 filter: `brightness(${visualStyle.brightnessMultiplier})`,
                 textShadow: '0 0 32px rgba(244, 162, 97, 0.22)',

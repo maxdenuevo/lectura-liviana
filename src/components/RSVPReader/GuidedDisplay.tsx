@@ -1,5 +1,5 @@
 import { memo, useLayoutEffect, useMemo, useRef, type CSSProperties, type ReactNode, type RefObject } from 'react';
-import { EnrichedWord, WordType } from './types';
+import { Emphasis, EnrichedWord, WordType } from './types';
 import { buildChunks, chunkAt, type Chunk } from '@/lib/guidedChunks';
 
 interface GuidedDisplayProps {
@@ -70,6 +70,22 @@ function blockStyle(type: WordType): CSSProperties {
 
 const HEADING = /^h[1-6]$/;
 
+/** Negrita/cursiva/código inline; undefined = sin estilo extra */
+function emphasisStyle(emphasis: Emphasis | undefined): CSSProperties | undefined {
+  switch (emphasis) {
+    case 'bold':
+      return { fontWeight: 700 };
+    case 'italic':
+      return { fontStyle: 'italic' };
+    case 'bold-italic':
+      return { fontWeight: 700, fontStyle: 'italic' };
+    case 'code':
+      return { fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.9em' };
+    default:
+      return undefined;
+  }
+}
+
 interface BlockProps {
   words: EnrichedWord[];
   from: number;
@@ -95,6 +111,7 @@ function renderBlock({ words, from, to, active, activeRef }: BlockProps): ReactN
         key={i}
         ref={i === active.start ? activeRef : undefined}
         className={isActive ? 'guided-word guided-word--on' : restClass}
+        style={emphasisStyle(words[i].emphasis)}
       >
         {words[i].text}
       </span>

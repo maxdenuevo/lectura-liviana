@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { EnrichedWord, WordType } from '@/components/RSVPReader/types';
+import { Emphasis, EnrichedWord, WordType } from '@/components/RSVPReader/types';
 import { getPauseMultiplier } from '@/lib/textParser';
 
 interface RSVPEngineConfig {
@@ -17,6 +17,7 @@ interface RSVPEngineResult {
   timeRemaining: number;
   currentWord: string;
   currentWordType: WordType;
+  currentWordEmphasis?: Emphasis;
   setIsPlaying: (playing: boolean) => void;
   setCurrentIndex: (index: number) => void;
   togglePlay: () => void;
@@ -89,6 +90,7 @@ export function useRSVPEngine({ words, wpm, initialIndex = 0, onComplete }: RSVP
   const currentWordObj = words[currentIndex] || { text: '', type: 'normal' as WordType, blockIndex: 0 };
   const currentWord = currentWordObj.text;
   const currentWordType = currentWordObj.type;
+  const currentWordEmphasis = currentWordObj.emphasis;
 
   // Toggle play/pause
   const togglePlay = () => {
@@ -126,6 +128,7 @@ export function useRSVPEngine({ words, wpm, initialIndex = 0, onComplete }: RSVP
     timeRemaining,
     currentWord,
     currentWordType,
+    currentWordEmphasis,
     setIsPlaying,
     setCurrentIndex,
     togglePlay,

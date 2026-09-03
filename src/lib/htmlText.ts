@@ -31,14 +31,15 @@ export function stripHtmlToText(html: string): string {
   text = text
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<\/p>/gi, '\n\n')
-    .replace(/<\/div>/gi, '\n')
+    .replace(/<\/div>/gi, '\n\n')
     .replace(/<\/h[1-6]>/gi, '\n\n')
+    .replace(/<\/li>/gi, '\n\n')
     .replace(/<[^>]+>/g, ' ');
 
   // Clean up whitespace
   return decodeEntities(text)
     .replace(/[^\S\n]+/g, ' ')
-    .replace(/\n\s+/g, '\n')
+    .replace(/\n[^\S\n]+/g, '\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }

@@ -1,5 +1,6 @@
-import { EnrichedWord, WordType } from '@/components/RSVPReader/types';
+import { Emphasis, EnrichedWord, WordType } from '@/components/RSVPReader/types';
 import { stripUnsafeHtml } from './htmlText';
+import { parseInline, stripInline, type InlineRun } from './inlineMarkdown';
 
 /**
  * Parses text with HTML or Markdown formatting and enriches words with structural metadata
@@ -14,11 +15,15 @@ if (typeof window !== 'undefined') {
 }
 
 // Configuración de DOMPurify para permitir solo tags seguros necesarios para el parsing
-const ALLOWED_TAGS = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'br'];
+const ALLOWED_TAGS = [
+  'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'br',
+  'strong', 'b', 'em', 'i', 'cite', 'kbd',
+];
 const ALLOWED_ATTR: string[] = []; // No necesitamos atributos
 
+/** Un bloque visual (párrafo, título, ítem…) con sus tramos inline */
 interface ParsedSegment {
-  text: string;
+  runs: InlineRun[];
   type: WordType;
   sectionTitle?: string;
   blockIndex: number;
@@ -31,11 +36,28 @@ const BLOCK_TAGS = new Set([
   'ul', 'ol', 'li', 'blockquote', 'pre',
 ]);
 
+const HTML_BOLD = new Set(['strong', 'b']);
+const HTML_ITALIC = new Set(['em', 'i', 'cite']);
+
 /**
- * Detect if text contains HTML tags
+ * ¿Conviene leer este texto como documento HTML?
+ *
+ * Basta un `<br>` o un `<u>` en una nota de Obsidian para que un detector
+ * ingenuo lo tome por HTML y tire toda la estructura Markdown. Solo vamos por
+ * el camino HTML cuando hay tags de bloque reales y no hay señales Markdown
+ * que pesen más.
  */
 function isHTML(text: string): boolean {
-  return /<[^>]+>/.test(text);
+  if (/<!doctype\s|<html[\s>]|<body[\s>]/i.test(text)) return true;
+
+  const blockTags = text.match(/<\/?(p|div|h[1-6]|ul|ol|li|blockquote|pre|section|article|table|tr)[\s>/]/gi);
+  if (!blockTags) return false;
+
+  const markdownLines = text.match(/^\s{0,3}(#{1,6}\s|[-*+]\s|\d+[.)]\s|>\s?|```)/gm);
+  const markdownInline = text.match(/\*\*[^*\n]+\*\*|__[^_\n]+__/g);
+  const markdownSignals = (markdownLines?.length ?? 0) + (markdownInline?.length ?? 0);
+
+  return blockTags.length > markdownSignals;
 }
 
 /**
@@ -69,22 +91,45 @@ function parseHTML(html: string): ParsedSegment[] {
   const container = document.createElement('div');
   container.innerHTML = sanitizedHtml;
 
-  // Bloque actual: los tags inline (code, em…) heredan el del bloque que los contiene
+  // Bloque actual: los tags inline (code, em…) heredan el del bloque que los contiene.
+  // Los nodos de texto consecutivos de un mismo bloque se acumulan en un segmento.
   let blockCounter = 0;
   let currentBlock = 0;
+  let open: ParsedSegment | null = null;
+
+  const closeSegment = () => {
+    if (open && open.runs.some(run => run.text.trim())) segments.push(open);
+    open = null;
+  };
+
+  const pushRun = (text: string, type: WordType, emphasis: Emphasis | undefined) => {
+    if (!open || open.blockIndex !== currentBlock) {
+      closeSegment();
+      open = { runs: [], type, sectionTitle: lastSectionTitle, blockIndex: currentBlock };
+    }
+    open.runs.push(emphasis ? { text, emphasis } : { text });
+  };
+
+  interface Inline {
+    type: WordType;
+    bold: boolean;
+    italic: boolean;
+  }
+
+  const emphasisOf = ({ type, bold, italic }: Inline): Emphasis | undefined => {
+    if (type === 'code') return undefined; // el bloque ya es código
+    if (bold && italic) return 'bold-italic';
+    if (bold) return 'bold';
+    if (italic) return 'italic';
+    return undefined;
+  };
 
   // Walk through DOM nodes
-  function walkNode(node: Node, inherited: WordType = 'normal') {
+  function walkNode(node: Node, inherited: Inline) {
     if (node.nodeType === Node.TEXT_NODE) {
-      const text = node.textContent?.trim();
-      if (text) {
-        segments.push({
-          text,
-          type: inherited,
-          sectionTitle: lastSectionTitle,
-          blockIndex: currentBlock,
-        });
-      }
+      const text = node.textContent ?? '';
+      if (text.trim()) pushRun(text, inherited.type, emphasisOf(inherited));
+      else if (text && open) pushRun(' ', inherited.type, undefined); // espacio entre inlines
       return;
     }
 
@@ -99,114 +144,204 @@ function parseHTML(html: string): ParsedSegment[] {
       return;
     }
 
-    let nodeType: WordType = inherited;
+    const style: Inline = { ...inherited };
 
     // Determine type based on tag
     if (tagName.match(/^h[1-6]$/)) {
-      nodeType = tagName as WordType;
+      style.type = tagName as WordType;
       lastSectionTitle = element.textContent?.trim();
     } else if (tagName === 'li') {
-      nodeType = 'list-item';
-    } else if (tagName === 'code' || tagName === 'pre') {
-      nodeType = 'code';
+      style.type = 'list-item';
+    } else if (tagName === 'pre') {
+      style.type = 'code';
     } else if (tagName === 'blockquote') {
-      nodeType = 'blockquote';
+      style.type = 'blockquote';
     }
+
+    if (HTML_BOLD.has(tagName)) style.bold = true;
+    if (HTML_ITALIC.has(tagName)) style.italic = true;
+
+    const isInlineCode = tagName === 'code' || tagName === 'kbd';
 
     const isBlock = BLOCK_TAGS.has(tagName);
     if (isBlock) currentBlock = ++blockCounter;
 
-    // Recurse through children
-    node.childNodes.forEach(child => walkNode(child, nodeType));
+    if (isInlineCode && style.type !== 'code') {
+      // Código inline: mismo bloque, énfasis 'code'
+      const text = element.textContent ?? '';
+      if (text.trim()) pushRun(text, style.type, 'code');
+    } else {
+      // Recurse through children
+      node.childNodes.forEach(child => walkNode(child, style));
+    }
 
     // El texto que siga a un bloque arranca uno nuevo (HTML mal anidado incluido)
     if (isBlock) currentBlock = ++blockCounter;
   }
 
-  container.childNodes.forEach(node => walkNode(node));
+  container.childNodes.forEach(node => walkNode(node, { type: 'normal', bold: false, italic: false }));
+  closeSegment();
 
   return segments;
 }
 
-/**
- * Clean inline markdown formatting (bold, italic, code, links)
- */
-function cleanInlineMarkdown(text: string): string {
-  return text
-    .replace(/`([^`]+)`/g, '$1')              // Remove inline code backticks
-    .replace(/\*\*\*([^*]+)\*\*\*/g, '$1')   // Remove bold+italic ***text***
-    .replace(/\*\*([^*]+)\*\*/g, '$1')       // Remove bold **text**
-    .replace(/\*([^*]+)\*/g, '$1')           // Remove italic *text*
-    .replace(/__([^_]+)__/g, '$1')           // Remove bold __text__
-    .replace(/_([^_]+)_/g, '$1')             // Remove italic _text_
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links [text](url)
-    .replace(/~~([^~]+)~~/g, '$1');          // Remove strikethrough ~~text~~
-}
+const HEADING_RE = /^(#{1,6})\s+(.*?)\s*#*\s*$/;
+const UNORDERED_RE = /^\s*[-*+]\s+(?:\[[ xX]\]\s+)?(.*)$/;
+const ORDERED_RE = /^\s*\d{1,9}[.)]\s+(.*)$/;
+const BLOCKQUOTE_RE = /^\s*>+\s?(.*)$/;
+const CALLOUT_RE = /^\[![\w-]+\][+-]?\s*/;
+const HR_RE = /^\s{0,3}([-*_])(\s*\1){2,}\s*$/;
+const FENCE_RE = /^\s{0,3}(```|~~~)/;
+const TABLE_SEPARATOR_RE = /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/;
+const FOOTNOTE_DEF_RE = /^\[\^[^\]]+\]:\s*(.*)$/;
 
 /**
  * Parse Markdown text and extract structured segments
  */
 function parseMarkdown(markdown: string): ParsedSegment[] {
   const segments: ParsedSegment[] = [];
-  const lines = markdown.split('\n');
+  const lines = markdown.replace(/\r\n?/g, '\n').split('\n');
   let lastSectionTitle: string | undefined;
-  // Cada línea no vacía es su propio bloque visual
   let blockCounter = 0;
 
-  for (const line of lines) {
-    const trimmedLine = line.trim();
-    if (!trimmedLine) continue;
-
-    // Check for heading
-    const headingMatch = trimmedLine.match(/^(#{1,6})\s+(.+)$/);
-    if (headingMatch) {
-      const level = headingMatch[1].length;
-      const text = cleanInlineMarkdown(headingMatch[2]);
-      lastSectionTitle = text;
-      segments.push({
-        text,
-        type: `h${level}` as WordType,
-        sectionTitle: lastSectionTitle,
-        blockIndex: blockCounter++,
-      });
-      continue;
+  // Párrafo en curso: las líneas seguidas (sin línea en blanco) son un mismo bloque
+  let paragraph: string[] = [];
+  const flushParagraph = () => {
+    if (paragraph.length === 0) return;
+    const runs = parseInline(paragraph.join(' '));
+    if (runs.some(run => run.text.trim())) {
+      segments.push({ runs, type: 'normal', sectionTitle: lastSectionTitle, blockIndex: blockCounter++ });
     }
+    paragraph = [];
+  };
 
-    // Check for list item
-    const listMatch = trimmedLine.match(/^[\s]*[-*+]\s+(.+)$/);
-    if (listMatch) {
-      segments.push({
-        text: cleanInlineMarkdown(listMatch[1]),
-        type: 'list-item',
-        sectionTitle: lastSectionTitle,
-        blockIndex: blockCounter++,
-      });
-      continue;
+  const push = (source: string, type: WordType) => {
+    flushParagraph();
+    const runs = parseInline(source);
+    if (runs.some(run => run.text.trim())) {
+      segments.push({ runs, type, sectionTitle: lastSectionTitle, blockIndex: blockCounter++ });
     }
+  };
 
-    // Check for blockquote
-    const blockquoteMatch = trimmedLine.match(/^>\s+(.+)$/);
-    if (blockquoteMatch) {
-      segments.push({
-        text: cleanInlineMarkdown(blockquoteMatch[1]),
-        type: 'blockquote',
-        sectionTitle: lastSectionTitle,
-        blockIndex: blockCounter++,
-      });
-      continue;
-    }
-
-    // Regular paragraph - clean inline formatting
-    const cleanedText = cleanInlineMarkdown(trimmedLine);
-    segments.push({
-      text: cleanedText,
-      type: 'normal',
-      sectionTitle: lastSectionTitle,
-      blockIndex: blockCounter++,
-    });
+  let start = 0;
+  // Frontmatter YAML de Obsidian: se omite
+  if (lines[0]?.trim() === '---') {
+    const end = lines.findIndex((line, i) => i > 0 && /^(---|\.\.\.)\s*$/.test(line));
+    if (end !== -1) start = end + 1;
   }
 
+  let inFence = false;
+
+  for (let i = start; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    if (FENCE_RE.test(line)) {
+      flushParagraph();
+      inFence = !inFence;
+      continue;
+    }
+
+    if (inFence) {
+      if (trimmed) {
+        flushParagraph();
+        segments.push({ runs: [{ text: line }], type: 'code', sectionTitle: lastSectionTitle, blockIndex: blockCounter++ });
+      }
+      continue;
+    }
+
+    if (!trimmed) {
+      flushParagraph();
+      continue;
+    }
+
+    if (HR_RE.test(line) || TABLE_SEPARATOR_RE.test(line)) {
+      flushParagraph();
+      continue;
+    }
+
+    const headingMatch = trimmed.match(HEADING_RE);
+    if (headingMatch) {
+      const level = headingMatch[1].length;
+      lastSectionTitle = stripInline(headingMatch[2]);
+      push(headingMatch[2], `h${level}` as WordType);
+      continue;
+    }
+
+    const listMatch = line.match(UNORDERED_RE) ?? line.match(ORDERED_RE);
+    if (listMatch) {
+      push(listMatch[1], 'list-item');
+      continue;
+    }
+
+    const blockquoteMatch = line.match(BLOCKQUOTE_RE);
+    if (blockquoteMatch) {
+      const content = blockquoteMatch[1].replace(CALLOUT_RE, '');
+      push(content, 'blockquote');
+      continue;
+    }
+
+    const footnoteMatch = trimmed.match(FOOTNOTE_DEF_RE);
+    if (footnoteMatch) {
+      push(footnoteMatch[1], 'normal');
+      continue;
+    }
+
+    // Fila de tabla: las celdas se leen seguidas
+    if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+      push(trimmed.slice(1, -1).split('|').map(cell => cell.trim()).filter(Boolean).join(' · '), 'normal');
+      continue;
+    }
+
+    // Línea de párrafo (los tags de bloque HTML sueltos se convierten en espacio)
+    paragraph.push(trimmed.replace(/<\/?(p|div|br)\b[^>]*>/gi, ' '));
+  }
+
+  flushParagraph();
+
   return segments;
+}
+
+const WORD_CHAR = /[\p{L}\p{N}]/u;
+
+/**
+ * Convierte los tramos de un bloque en palabras. Una palabra hereda el énfasis
+ * de su primera letra: en `**"Autor"**.` el punto final no es negrita, pero
+ * la palabra sí.
+ */
+function runsToWords(runs: InlineRun[]): { text: string; emphasis?: Emphasis }[] {
+  const words: { text: string; emphasis?: Emphasis }[] = [];
+  let text = '';
+  let emphasis: Emphasis | undefined;
+  let decided = false;
+
+  const flush = () => {
+    if (text) words.push(emphasis ? { text, emphasis } : { text });
+    text = '';
+    emphasis = undefined;
+    decided = false;
+  };
+
+  for (const run of runs) {
+    for (const ch of run.text) {
+      if (/\s/.test(ch)) {
+        flush();
+        continue;
+      }
+      if (!decided) {
+        if (WORD_CHAR.test(ch)) {
+          emphasis = run.emphasis;
+          decided = true;
+        } else if (!text) {
+          emphasis = run.emphasis; // provisional, por si la palabra es solo puntuación
+        }
+      }
+      text += ch;
+    }
+  }
+  flush();
+
+  return words;
 }
 
 /**
@@ -216,14 +351,13 @@ function segmentsToEnrichedWords(segments: ParsedSegment[]): EnrichedWord[] {
   const enrichedWords: EnrichedWord[] = [];
 
   for (const segment of segments) {
-    const words = segment.text.trim().split(/\s+/).filter(Boolean);
-
-    for (const word of words) {
+    for (const word of runsToWords(segment.runs)) {
       enrichedWords.push({
-        text: word,
+        text: word.text,
         type: segment.type,
         sectionTitle: segment.sectionTitle,
         blockIndex: segment.blockIndex,
+        ...(word.emphasis ? { emphasis: word.emphasis } : {}),
       });
     }
   }

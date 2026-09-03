@@ -171,6 +171,7 @@ export default function RSVPReader() {
     timeRemaining,
     currentWord,
     currentWordType,
+    currentWordEmphasis,
     setIsPlaying,
     setCurrentIndex,
     togglePlay: engineTogglePlay,
@@ -608,6 +609,7 @@ export default function RSVPReader() {
             currentIndex={currentIndex}
             wordParts={wordParts}
             wordType={currentWordType}
+            emphasis={currentWordEmphasis}
             progress={progress}
           />
         )}
