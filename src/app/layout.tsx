@@ -15,7 +15,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Lectura Liviana 🕯️ - RSVP Reader",
+  title: "Lectura Liviana - RSVP Reader",
   description: "Herramienta de lectura rápida con método RSVP - Cálida y cómoda para la vista",
 };
 

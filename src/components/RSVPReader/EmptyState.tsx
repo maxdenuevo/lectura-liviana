@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { theme } from '@/lib/theme';
+import { CampfireIcon } from '@/components/icons';
 
 interface EmptyStateProps {
   onOpenLibrary: () => void;
@@ -26,7 +27,7 @@ function EmptyState({ onOpenLibrary, onOpenConfig }: EmptyStateProps) {
         gap: theme.spacing.lg,
       }}
     >
-      <div style={{ fontSize: '2.5rem' }} aria-hidden="true">🕯️</div>
+      <CampfireIcon size="2.5rem" style={{ color: theme.colors.accent }} />
       <p
         style={{
           margin: 0,

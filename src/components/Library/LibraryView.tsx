@@ -4,6 +4,7 @@ import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { type LibraryEntry } from '@/hooks/useLibrary';
 import BookCard from './BookCard';
+import { CampfireIcon } from '@/components/icons';
 
 interface LibraryViewProps {
   showLibrary: boolean;
@@ -108,7 +109,9 @@ function LibraryView({
                     lineHeight: 1.6,
                   }}
                 >
-                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🕯️</div>
+                  <div style={{ marginBottom: '0.5rem', color: theme.colors.accent }}>
+                    <CampfireIcon size="2rem" />
+                  </div>
                   Tu biblioteca está vacía.
                   <br />
                   Carga un EPUB, archivo o URL desde el menú de configuración: los libros quedan

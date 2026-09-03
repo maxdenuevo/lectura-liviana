@@ -1,5 +1,6 @@
 import { memo, useEffect, useState } from 'react';
 import { theme } from '@/lib/theme';
+import { HandWavingIcon } from '@/components/icons';
 
 interface FirstVisitHintsProps {
   onDismiss?: () => void;
@@ -50,7 +51,7 @@ function FirstVisitHints({ onDismiss, onLoadExample }: FirstVisitHintsProps) {
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.md }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.sm }}>
-              <span style={{ fontSize: '1.5rem' }}>👋</span>
+              <HandWavingIcon size="1.5rem" style={{ color: theme.colors.accent, flexShrink: 0 }} />
               <h3
                 style={{
                   fontSize: '1rem',
