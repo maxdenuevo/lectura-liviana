@@ -171,11 +171,17 @@ El proyecto está organizado con una arquitectura modular para facilitar el mant
 src/
 ├── app/                    # App router de Next.js
 │   ├── api/fetch-url/     # Endpoint para cargar URLs (con protección SSRF)
+│   ├── icon0.svg          # Favicon (campfire de Phosphor en color candlelight)
+│   ├── icon1.png          # Favicon PNG para navegadores sin soporte SVG (Safari)
+│   ├── manifest.ts        # Manifest de la PWA (íconos en public/icons)
+│   ├── sw.ts              # Service worker (Serwist) para lectura sin conexión
 │   └── layout.tsx         # Layout principal con security headers
 ├── components/
+│   ├── Library/           # Biblioteca de textos guardados
 │   └── RSVPReader/        # Componente principal modularizado
 │       ├── index.tsx                # Orquestador principal
-│       ├── WordDisplay.tsx          # Presentación de palabras
+│       ├── WordDisplay.tsx          # Presentación palabra a palabra
+│       ├── GuidedDisplay.tsx        # Modo guiado (texto en flujo con foco móvil)
 │       ├── ControlBar.tsx           # Controles de reproducción
 │       ├── ConfigModal.tsx          # Panel de configuración
 │       ├── ShortcutsHelp.tsx        # Ayuda de atajos
@@ -190,11 +196,18 @@ src/
 │   ├── useKeyboardShortcuts.ts     # Atajos de teclado
 │   ├── useTouchGestures.ts         # Gestos táctiles
 │   ├── usePreferences.ts           # Persistencia local
+│   ├── useLibrary.ts               # Biblioteca en IndexedDB
+│   ├── useReadingProgress.ts       # Guardado de posición de lectura
 │   ├── useFocusTrap.ts             # Accesibilidad de modales
-│   └── useReducedMotion.ts         # Detección de preferencias
+│   └── useBodyScrollLock.ts        # Bloqueo de scroll bajo modales
 └── lib/                    # Utilidades
     ├── theme.ts                    # Sistema de diseño
-    ├── textParser.ts               # Parsing y sanitización de HTML/Markdown
+    ├── textParser.ts               # Detección de formato, bloques Markdown/HTML y sanitización
+    ├── inlineMarkdown.ts           # Énfasis inline (negrita, cursiva, código, links, sintaxis Obsidian)
+    ├── htmlText.ts                 # Extracción de texto desde HTML por regex
+    ├── guidedChunks.ts             # Agrupación de palabras para el modo guiado
+    ├── fullscreen.ts               # Pantalla completa con fallback WebKit
+    ├── db.ts                       # Esquema IndexedDB de la biblioteca
     └── epubParser.ts               # Extracción completa de EPUB (metadatos, capítulos, progreso)
 ```
 

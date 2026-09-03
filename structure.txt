@@ -11,8 +11,9 @@
 │   ├── app
 │   │   ├── api
 │   │   ├── error.tsx
-│   │   ├── favicon.ico
 │   │   ├── globals.css
+│   │   ├── icon0.svg
+│   │   ├── icon1.png
 │   │   ├── layout.tsx
 │   │   ├── manifest.ts
 │   │   ├── page.tsx
@@ -33,7 +34,10 @@
 │   └── lib
 │       ├── db.ts
 │       ├── epubParser.ts
+│       ├── fullscreen.ts
+│       ├── guidedChunks.ts
 │       ├── htmlText.ts
+│       ├── inlineMarkdown.ts
 │       ├── textParser.ts
 │       └── theme.ts
 ├── eslint.config.mjs
@@ -50,4 +54,4 @@
 ├── tsconfig.json
 └── tsconfig.tsbuildinfo
 
-12 directories, 39 files
+12 directories, 43 files
