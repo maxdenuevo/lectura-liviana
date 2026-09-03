@@ -311,6 +311,23 @@ export default function RSVPReader() {
     onError: showError,
   });
 
+  // Cargador de la biblioteca: guarda sin abrir, para leer después
+  const libraryLoader = useTextLoader({
+    onTextLoaded: async (loadedText, source, title, loadedEpubData) => {
+      const bookTitle = title || 'Sin título';
+      const stored = await addBookToLibrary({
+        title: bookTitle,
+        author: loadedEpubData?.metadata.author,
+        source,
+        fullText: loadedText,
+        metadata: loadedEpubData?.metadata,
+        chapters: loadedEpubData?.chapters,
+      }, { open: false });
+      if (stored) showNotification(`${bookTitle} guardado para leer después`);
+    },
+    onError: showError,
+  });
+
   // El textarea edita texto efímero: se despega del libro activo
   const handleTextChange = useCallback((newText: string) => {
     setText(newText);
@@ -467,6 +484,9 @@ export default function RSVPReader() {
           onClose={closeLibrary}
           onOpenBook={openBook}
           onDeleteBook={handleDeleteBook}
+          onFileAdd={libraryLoader.loadFromFile}
+          uploadProgress={libraryLoader.epubProgress}
+          uploadStatus={libraryLoader.epubStatus}
         />
 
         {/* Screen reader announcements */}
