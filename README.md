@@ -154,6 +154,17 @@ cd LecturaLiviana
 
 La aplicación se abrirá automáticamente en http://localhost:3000.
 
+### Bóveda local (puente con vida.txt)
+
+La app puede abrir directamente un `.md`, `.txt` o `.epub` de una carpeta local — pensado para la bóveda Obsidian de la carrera — a través de la ruta `/api/vault`, que **solo existe cuando el server corre en local** con la variable de entorno definida:
+
+```bash
+# .env.local (ignorado por git)
+LECTURA_VAULT_DIR="/Users/max/Desktop/UDP/UDP Vault"
+```
+
+Contrato: `http://localhost:3000/#vault=<ruta relativa a la bóveda, URL-encoded>`. Al montar, la app pide `GET /api/vault?path=…&strip=anki` (con `strip=anki` se corta el bloque final `## Para Anki` de los markdown), guarda el texto en la biblioteca con el id estable `vault:<ruta>` y lo abre; volver a abrir la misma ruta reanuda el progreso. La ruta rechaza todo lo que quede fuera de `LECTURA_VAULT_DIR` y cualquier extensión que no sea `.md`, `.txt` o `.epub`. En Vercel no hay variable → 404 y el hash se ignora con un aviso.
+
 ### Comandos disponibles
 
 ```bash

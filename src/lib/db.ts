@@ -97,14 +97,17 @@ export async function getBook(id: string): Promise<StoredBook | undefined> {
 }
 
 export async function addBook(
-  book: Omit<StoredBook, 'id' | 'addedAt' | 'lastOpenedAt'>
+  book: Omit<StoredBook, 'id' | 'addedAt' | 'lastOpenedAt'>,
+  { id }: { id?: string } = {}
 ): Promise<StoredBook> {
   try {
     const db = await getDB();
     const now = Date.now();
     const stored: StoredBook = {
       ...book,
-      id: crypto.randomUUID(),
+      // id estable opcional (p.ej. `vault:<ruta>`): la misma lectura abierta
+      // de nuevo reanuda su progreso en vez de duplicar el libro
+      id: id ?? crypto.randomUUID(),
       addedAt: now,
       lastOpenedAt: now,
     };

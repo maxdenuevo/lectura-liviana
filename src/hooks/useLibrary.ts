@@ -69,11 +69,20 @@ export function useLibrary({ onBookOpened, onError }: UseLibraryConfig) {
       metadata?: StoredBook['metadata'];
       chapters?: StoredBook['chapters'];
     },
-    { open = true }: { open?: boolean } = {}
+    { open = true, id }: { open?: boolean; id?: string } = {}
   ): Promise<StoredBook | null> => {
     try {
+      // id estable (puente con la bóveda): si ya está en la biblioteca, se reabre
+      // donde quedó en vez de guardarlo de nuevo
+      if (id) {
+        const existente = await getBook(id);
+        if (existente) {
+          if (open) await openBook(id);
+          return existente;
+        }
+      }
       const wordCount = book.fullText.trim() ? book.fullText.trim().split(/\s+/).length : 0;
-      const stored = await addBook({ ...book, wordCount });
+      const stored = await addBook({ ...book, wordCount }, { id });
       await refreshBooks();
       if (open) {
         setActiveBookId(stored.id);
@@ -84,7 +93,7 @@ export function useLibrary({ onBookOpened, onError }: UseLibraryConfig) {
       onError(error instanceof Error ? error.message : 'No se pudo guardar el libro');
       return null;
     }
-  }, [onBookOpened, onError, refreshBooks]);
+  }, [onBookOpened, onError, refreshBooks, openBook]);
 
   const removeBook = useCallback(async (id: string) => {
     try {
@@ -125,8 +134,10 @@ export function useLibrary({ onBookOpened, onError }: UseLibraryConfig) {
         const summaries = await refreshBooks();
         if (cancelled) return;
 
-        // Reanudar el último libro abierto
-        if (summaries.length > 0) {
+        // Reanudar el último libro abierto — salvo que la URL traiga #vault=:
+        // el puente con la bóveda va a abrir otro y el flash del anterior sobra
+        const viaVault = typeof window !== 'undefined' && window.location.hash.startsWith('#vault=');
+        if (summaries.length > 0 && !viaVault) {
           const lastBook = await getBook(summaries[0].id);
           const progress = lastBook ? await getProgress(lastBook.id) : undefined;
           if (!cancelled && lastBook) {

@@ -23,7 +23,7 @@ import { useReadingProgress } from '@/hooks/useReadingProgress';
 import { theme } from '@/lib/theme';
 import { toggleFullscreen } from '@/lib/fullscreen';
 import { parseText, parseSimpleText } from '@/lib/textParser';
-import { type EpubBook } from '@/lib/epubParser';
+import { extractEpubText, type EpubBook } from '@/lib/epubParser';
 import { type StoredBook } from '@/lib/db';
 
 const CONTROLS_HIDE_DELAY = 3000;
@@ -143,6 +143,52 @@ export default function RSVPReader() {
     removeBook,
     detachActiveBook,
   } = useLibrary({ onBookOpened: handleBookOpened, onError: showError });
+
+  // Puente con la bóveda (vida.txt): #vault=<ruta relativa> → GET /api/vault
+  // (solo existe en local con LECTURA_VAULT_DIR). Id estable `vault:<ruta>`,
+  // así reabrir la misma lectura reanuda el progreso. El hash se limpia para
+  // que un reload no vuelva a importar.
+  const vaultHandled = useRef(false);
+  useEffect(() => {
+    if (!isLibraryLoaded || vaultHandled.current) return;
+    const m = /^#vault=(.+)$/.exec(window.location.hash);
+    if (!m) return;
+    vaultHandled.current = true;
+    const ruta = decodeURIComponent(m[1]);
+    window.history.replaceState(null, '', window.location.pathname);
+    (async () => {
+      try {
+        const res = await fetch(`/api/vault?path=${encodeURIComponent(ruta)}&strip=anki`);
+        if (!res.ok) {
+          throw new Error(res.status === 404
+            ? 'La bóveda no está disponible: corre la app en local con LECTURA_VAULT_DIR'
+            : `No se pudo leer la lectura (HTTP ${res.status})`);
+        }
+        const nombre = ruta.split('/').pop() ?? ruta;
+        const titulo = nombre.replace(/\.(md|txt|epub)$/i, '');
+        const id = `vault:${ruta}`;
+        if (/\.epub$/i.test(ruta)) {
+          const blob = await res.blob();
+          const file = new File([blob], nombre, { type: 'application/epub+zip' });
+          const epubBook = await extractEpubText(file, () => {});
+          await addBookToLibrary({
+            title: epubBook.metadata.title || titulo,
+            author: epubBook.metadata.author,
+            source: 'epub',
+            fullText: epubBook.fullText,
+            metadata: epubBook.metadata,
+            chapters: epubBook.chapters,
+          }, { id });
+        } else {
+          const fullText = await res.text();
+          await addBookToLibrary({ title: titulo, source: 'file', fullText }, { id });
+        }
+        showNotification('Cargado desde la bóveda');
+      } catch (error) {
+        showError(error instanceof Error ? error.message : 'No se pudo cargar desde la bóveda');
+      }
+    })();
+  }, [isLibraryLoaded, addBookToLibrary, showNotification, showError]);
 
   // Texto de bienvenida solo en la primera carga con biblioteca vacía;
   // después (p.ej. al borrar el libro activo) se muestra el EmptyState
