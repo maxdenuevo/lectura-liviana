@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- lectura-liviana siempre arriba en localhost:3000, para que el `→` de
+     atalaya (new tab) abra una lectura sin levantar nada a mano.
+     Se instala con `npm run deploy` (scripts/deploy.sh): build + copia a
+     ~/Library/LaunchAgents + bootstrap/kickstart. Log en /tmp/lectura-liviana.log -->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>me.max.lectura-liviana</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/max/.nvm/versions/node/v24.18.0/bin/node</string>
+    <string>node_modules/.bin/next</string>
+    <string>start</string>
+    <string>-p</string>
+    <string>3000</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/max/Desktop/repos/lectura-liviana</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>NODE_ENV</key>
+    <string>production</string>
+    <key>PATH</key>
+    <string>/Users/max/.nvm/versions/node/v24.18.0/bin:/usr/local/bin:/usr/bin:/bin</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ThrottleInterval</key>
+  <integer>5</integer>
+  <key>StandardOutPath</key>
+  <string>/tmp/lectura-liviana.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/lectura-liviana.log</string>
+</dict>
+</plist>

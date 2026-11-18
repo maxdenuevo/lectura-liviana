@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "deploy": "sh scripts/deploy.sh"
   },
   "dependencies": {
     "@mozilla/readability": "^0.6.0",

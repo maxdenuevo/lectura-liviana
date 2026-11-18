@@ -154,7 +154,7 @@ cd LecturaLiviana
 
 La aplicación se abrirá automáticamente en http://localhost:3000.
 
-### Bóveda local (puente con vida.txt)
+### Bóveda local (puente con atalaya)
 
 La app puede abrir directamente un `.md`, `.txt` o `.epub` de una carpeta local — pensado para la bóveda Obsidian de la carrera — a través de la ruta `/api/vault`, que **solo existe cuando el server corre en local** con la variable de entorno definida:
 
@@ -165,6 +165,18 @@ LECTURA_VAULT_DIR="/Users/max/Desktop/UDP/UDP Vault"
 
 Contrato: `http://localhost:3000/#vault=<ruta relativa a la bóveda, URL-encoded>`. Al montar, la app pide `GET /api/vault?path=…&strip=anki` (con `strip=anki` se corta el bloque final `## Para Anki` de los markdown), guarda el texto en la biblioteca con el id estable `vault:<ruta>` y lo abre; volver a abrir la misma ruta reanuda el progreso. La ruta rechaza todo lo que quede fuera de `LECTURA_VAULT_DIR` y cualquier extensión que no sea `.md`, `.txt` o `.epub`. En Vercel no hay variable → 404 y el hash se ignora con un aviso.
 
+### Siempre arriba (launchd)
+
+Para que el botón `→` de atalaya (la new tab) abra una lectura sin levantar nada a mano, el server de producción corre como LaunchAgent del usuario en `localhost:3000`, con `KeepAlive` (se relanza si muere) y `RunAtLoad` (arranca al iniciar sesión):
+
+```bash
+npm run deploy            # next build + instala/actualiza ~/Library/LaunchAgents/me.max.lectura-liviana.plist y (re)inicia
+npm run deploy -- --stop  # detiene y desinstala el agente
+tail -f /tmp/lectura-liviana.log
+```
+
+El plist vive en `scripts/launchd/` (rutas absolutas a este repo y al node de nvm: si cambian, editarlo y volver a `npm run deploy`). Tras cualquier cambio de código, `npm run deploy` reconstruye y reinicia. `next dev` sigue sirviendo para desarrollar, en otro puerto (`npm run dev -- -p 3001`) mientras el agente ocupa el 3000.
+
 ### Comandos disponibles
 
 ```bash
@@ -172,6 +184,7 @@ npm run dev      # Servidor de desarrollo con Turbopack
 npm run build    # Construir para producción
 npm run start    # Ejecutar build de producción
 npm run lint     # Verificar código con ESLint
+npm run deploy   # Build + LaunchAgent permanente en :3000 (ver arriba)
 ```
 
 ## Arquitectura

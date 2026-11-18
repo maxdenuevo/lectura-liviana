@@ -190,6 +190,12 @@ export default function RSVPReader() {
     })();
   }, [isLibraryLoaded, addBookToLibrary, showNotification, showError]);
 
+  // Título del libro activo, para mostrarlo junto a los controles
+  const activeTitle = useMemo(
+    () => books.find(book => book.id === activeBookId)?.title,
+    [books, activeBookId]
+  );
+
   // Texto de bienvenida solo en la primera carga con biblioteca vacía;
   // después (p.ej. al borrar el libro activo) se muestra el EmptyState
   const hasShownWelcome = useRef(false);
@@ -697,6 +703,7 @@ export default function RSVPReader() {
           showControls={showControls}
           wpm={wpm}
           isPlaying={isPlaying}
+          title={activeTitle}
           onAdjustSpeed={adjustSpeed}
           onTogglePlay={togglePlay}
           onRestart={restart}

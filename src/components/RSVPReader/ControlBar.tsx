@@ -4,6 +4,8 @@ interface ControlBarProps {
   showControls: boolean;
   wpm: number;
   isPlaying: boolean;
+  /** Título del libro activo; se muestra discreto arriba junto con los controles */
+  title?: string;
   onAdjustSpeed: (delta: number) => void;
   onTogglePlay: () => void;
   onRestart: () => void;
@@ -17,6 +19,7 @@ function ControlBar({
   showControls,
   wpm,
   isPlaying,
+  title,
   onAdjustSpeed,
   onTogglePlay,
   onRestart,
@@ -27,6 +30,41 @@ function ControlBar({
 }: ControlBarProps) {
   return (
     <>
+      {showControls && title && (
+        <div
+          key="title"
+          className="anim-fade-in-down"
+          style={{
+            position: 'fixed',
+            top: '1.5rem',
+            left: 0,
+            right: 0,
+            height: '3rem',
+            // Deja libres los botones flotantes de las esquinas
+            padding: '0 5.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 40,
+            pointerEvents: 'none',
+          }}
+        >
+          <span
+            title={title}
+            style={{
+              maxWidth: '32rem',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              fontSize: '0.8125rem',
+              letterSpacing: '0.02em',
+              color: 'var(--text-muted)',
+            }}
+          >
+            {title}
+          </span>
+        </div>
+      )}
       {showControls && (
         <div
           key="controls"
